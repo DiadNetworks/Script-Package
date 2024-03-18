@@ -39,6 +39,7 @@ Source: ".\MainGUI.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\Templates\*"; DestDir: "{app}\Templates"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ".\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\Images\*"; DestDir: "{app}\Images"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
