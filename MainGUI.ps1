@@ -981,6 +981,131 @@ function Add-DistributionListMember {
 
 	Stop-Transcript
 }
+function Add-EmailAccounts {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-EmailAccounts.txt"
+	Write-Host "Running Add-EmailAccounts script..."
+	$progressBar1.Value = 10
+
+	function OnOpenTemplateButtonClick {
+		Write-Host "Open template button clicked."
+		$progressBar1.Value = 10
+		Invoke-Item ".\Templates\Add-EmailAccounts.csv"
+		$progressBar1.Value = 100
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+	function OnCreateAccountsButtonClick {
+		Write-Host "createAccountsButton clicked."
+		$progressBar1.Value = 10
+		Import-Csv ".\Templates\Add-EmailAccounts.csv" | ForEach-Object {
+			$progressBar1.Value = 10
+			$firstName = $_.FirstName
+			$lastName = $_.LastName
+			$displayName = $firstName + " " + $lastName
+			$emailAddress = $_.EmailAddress
+			$splitEmail = $emailAddress -split "\@"
+			$mailNickname = $splitEmail[0]
+			$password = $_.Password
+
+			$passwordProfile = @{
+				ForceChangePasswordNextSignIn = $false
+				Password = $password
+			}
+
+			$progressBar1.Value = 30
+		
+			New-MgUser -AccountEnabled -PasswordProfile $passwordProfile -DisplayName $displayName -GivenName $firstName -Surname $lastName -UserPrincipalName $emailAddress -MailNickname $mailNickname -UsageLocation US
+			$progressBar1.Value = 60
+		
+			# Set license
+			if ($licenseComboBox.Text -eq "Business Basic") {
+				Write-Host "Assigning Business Basic license..."
+				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
+			} elseif ($licenseComboBox.Text -eq "Business Standard") {
+				Write-Host "Assigning Business Standard license..."
+				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
+			} else {
+				Write-Host "No license selected or invalid entry."
+			}
+			$progressBar1.Value = 90
+		}
+		CheckForErrors
+		OperationComplete
+	}
+
+	$addEmailAccountsForm = New-Object System.Windows.Forms.Form
+
+	$emailLicenseLabel = New-Object System.Windows.Forms.Label
+	$licenseComboBox = New-Object System.Windows.Forms.ComboBox
+	$createAccountsButton = New-Object System.Windows.Forms.Button
+	$openTemplateButton = New-Object System.Windows.Forms.Button
+	#
+	# emailLicenseLabel
+	#
+	$emailLicenseLabel.AutoSize = $true
+	$emailLicenseLabel.Location = New-Object System.Drawing.Point(9, 15)
+	$emailLicenseLabel.Name = "emailLicenseLabel"
+	$emailLicenseLabel.Size = New-Object System.Drawing.Size(75, 13)
+	$emailLicenseLabel.TabIndex = 0
+	$emailLicenseLabel.Text = "Email License:"
+	#
+	# licenseComboBox
+	#
+	$licenseComboBox.FormattingEnabled = $true
+	$licenseComboBox.Items.AddRange(@(
+	"Business Basic",
+	"Business Standard"))
+	$licenseComboBox.Location = New-Object System.Drawing.Point(90, 12)
+	$licenseComboBox.Name = "licenseComboBox"
+	$licenseComboBox.Size = New-Object System.Drawing.Size(182, 21)
+	$licenseComboBox.TabIndex = 1
+	#
+	# createAccountsButton
+	#
+	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 68)
+	$createAccountsButton.Name = "createAccountsButton"
+	$createAccountsButton.Size = New-Object System.Drawing.Size(260, 23)
+	$createAccountsButton.TabIndex = 3
+	$createAccountsButton.Text = "Create Accounts"
+	$createAccountsButton.UseVisualStyleBackColor = $true
+	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
+	#
+	# openTemplateButton
+	#
+	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 39)
+	$openTemplateButton.Name = "openTemplateButton"
+	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
+	$openTemplateButton.TabIndex = 2
+	$openTemplateButton.Text = "Open Template"
+	$openTemplateButton.UseVisualStyleBackColor = $true
+	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
+	#
+	# addEmailAccountsForm
+	#
+	$addEmailAccountsForm.ClientSize = New-Object System.Drawing.Size(284, 103)
+	$addEmailAccountsForm.Controls.Add($emailLicenseLabel)
+	$addEmailAccountsForm.Controls.Add($licenseComboBox)
+	$addEmailAccountsForm.Controls.Add($createAccountsButton)
+	$addEmailAccountsForm.Controls.Add($openTemplateButton)
+	$addEmailAccountsForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$addEmailAccountsForm.MaximizeBox = $false
+	$addEmailAccountsForm.MinimizeBox = $false
+	$addEmailAccountsForm.Name = "addEmailAccountsForm"
+	$addEmailAccountsForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$addEmailAccountsForm.Text = "Add-EmailAccounts"
+	$addEmailAccountsForm.Add_Shown({$addEmailAccountsForm.Activate()})
+
+	Write-Host "Loaded addEmailAccountsForm."
+	$progressBar1.Value = 100
+	CheckForErrors
+	$progressBar1.Value = 0
+
+	$addEmailAccountsForm.ShowDialog()
+	# Release the Form
+	$addEmailAccountsForm.Dispose()
+	
+	Stop-Transcript
+}
 function Add-EmailAlias {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-EmailAlias.txt"
 	Write-Host "Running Add-EmailAlias script..."
@@ -3472,6 +3597,7 @@ $scriptList = @(
 	"Add-AuthenticationPhoneMethod",
 	"Add-Contacts",
 	"Add-DistributionListMember",
+	"Add-EmailAccounts",
 	"Add-EmailAlias",
 	"Add-MailboxMember",
 	"Add-TrustedSender",
@@ -3509,6 +3635,7 @@ function OnRunButtonClick {
 		"Add-AuthenticationPhoneMethod" { Add-AuthenticationPhoneMethod }
 		"Add-Contacts" { Add-Contacts }
 		"Add-DistributionListMember" { Add-DistributionListMember }
+		"Add-EmailAccounts" { Add-EmailAccounts }
 		"Add-EmailAlias" { Add-EmailAlias }
         "Add-MailboxMember" { Add-MailboxMember }
 		"Add-TrustedSender" { Add-TrustedSender }
