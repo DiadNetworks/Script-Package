@@ -1383,7 +1383,7 @@ function Add-MailboxMember {
 		} elseif ($mailboxMemberMode -eq 1) {
 			Write-Host "Open template button clicked."
 			$progressBar1.Value = 10
-			Invoke-Item ".\Templates\Add-MailboxMember.csv"
+			Invoke-Item ".\Templates\Remove-MailboxMember.csv"
 			$progressBar1.Value = 0
 		}
 		CheckForErrors
