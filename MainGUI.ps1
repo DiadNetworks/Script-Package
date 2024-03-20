@@ -3698,7 +3698,7 @@ function OnSignOutButtonClick {
 # Loading external assemblies
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-#EnableVisualStyles
+# EnableVisualStyles
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $MainWindow = New-Object System.Windows.Forms.Form
