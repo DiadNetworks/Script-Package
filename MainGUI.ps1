@@ -1305,8 +1305,8 @@ function Add-MailboxMember {
 			$progressBar1.Value = 80
 			Write-Host "Added $member to $mailbox." -ForegroundColor Cyan
 		} elseif ($mailboxMemberMode -eq 1) {
-			$mailbox = $removeMailboxInputBox.Text
-			$member = $removeMemberInputBox.Text
+			$mailbox = $mailboxInputBox.Text
+			$member = $memberInputBox.Text
 			$progressBar1.Value = 10
 			Remove-MailboxPermission -Identity $mailbox -User $member -AccessRights FullAccess -InheritanceType All -Confirm:$false
 			$progressBar1.Value = 50
