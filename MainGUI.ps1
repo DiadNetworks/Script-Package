@@ -1403,8 +1403,8 @@ function Add-MailboxMember {
 			}
 		} elseif ($mailboxMemberMode -eq 1) {
 			Import-Csv ".\Templates\Remove-MailboxMember.csv" | ForEach-Object {
-				$mailbox = $_.Member
-				$member = $_.Mailbox
+				$member = $_.Member
+				$mailbox = $_.Mailbox
 				$progressBar1.Value = 20
 				Remove-MailboxPermission -Identity $mailbox -User $member -AccessRights FullAccess -InheritanceType All -Confirm:$false
 				$progressBar1.Value = 50
