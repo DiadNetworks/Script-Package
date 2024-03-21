@@ -2359,6 +2359,7 @@ function Enable-Archive {
 			$mailbox = $archiveInputBox.Text
 			$progressBar1.Value = 20
 			Enable-Mailbox -Identity $mailbox -AutoExpandingArchive
+			Write-Host "Enabled auto expanding archive for $mailbox."
 			$progressBar1.Value = 80
 			CheckForErrors
 			OperationComplete
