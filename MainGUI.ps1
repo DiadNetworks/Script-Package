@@ -1,4 +1,4 @@
-$version = "v2.10.2"
+$version = "v2.11.0"
 #Requires -RunAsAdministrator
 #GUI generated with ConvertForm module version 2.0.0
 #Need these 2 modules:
