@@ -1110,17 +1110,48 @@ function Add-EmailAlias {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-EmailAlias.txt"
 	Write-Host "Running Add-EmailAlias script..."
 	$progressBar1.Value = 10
-	function OnCreateAliasButtonClick {
-		$progressBar1.Value = 10
-		$mailbox = $mailboxInput.Text
-		$alias = $aliasInput.Text
-		$progressBar1.Value = 30
-		Set-Mailbox $mailbox -EmailAddresses @{Add= $alias}
-		$progressBar1.Value = 50
-		Write-Host "Added $alias to $mailbox."
-		$progressBar1.Value = 80
-		CheckForErrors
-		OperationComplete
+
+	function OnAddAliasButtonClick {
+		Write-Host "AddAliasButton clicked."
+		switch ($incrementalCheckBox.Checked) {
+			$true {
+				Write-Host "Creating incremental aliases..."
+				$progressBar1.Value = 10
+				$mailbox = $mailboxTextBox.Text
+				$alias = $aliasTextBox.Text
+				$splitAlias = $alias -split '\@'
+				$aliasName = $splitAlias[0]
+				$aliasDomain = $splitAlias[1]
+				$progressBar1.Value = 30
+				for ($i = 0; $i -lt $numericUpDown1.Value; $i++) {
+					$progressBar1.Value = 10
+					$completeAlias = $aliasName + [string]$i + $aliasDomain
+					Set-Mailbox $mailbox -EmailAddresses @{Add= $completeAlias}
+					Write-Host "Added $completeAlias to $mailbox."
+					$progressBar1.Value = 90
+				}
+				$progressBar1.Value = 90
+				CheckForErrors
+				OperationComplete
+			}
+			$false {
+				Write-Host "Creating single alias..."
+				$progressBar1.Value = 10
+				$mailbox = $mailboxTextBox.Text
+				$alias = $aliasTextBox.Text
+				$progressBar1.Value = 30
+				Set-Mailbox $mailbox -EmailAddresses @{Add= $alias}
+				$progressBar1.Value = 50
+				Write-Host "Added $alias to $mailbox."
+				$progressBar1.Value = 80
+				CheckForErrors
+				OperationComplete
+			}
+			Default {
+				Write-Host "An error seems to have occurred."
+				CheckForErrors
+			}
+		}
 	}
 	function OnOpenTemplateButtonClick {
 		$progressBar1.Value = 10
@@ -1129,7 +1160,7 @@ function Add-EmailAlias {
 		CheckForErrors
 		$progressBar1.Value = 0
 	}
-	function OnCreateBulkButtonClick {
+	function OnAddAliasBulkButtonClick {
 		Import-Csv ".\Templates\Add-EmailAlias.csv" | ForEach-Object {
 			$progressBar1.Value = 20
 			$mailbox = $_.Mailbox
@@ -1142,126 +1173,226 @@ function Add-EmailAlias {
 		CheckForErrors
 		OperationComplete
 	}
-	
-	$scriptForm8 = New-Object System.Windows.Forms.Form
-	
+	function OnIncrementalCheckBoxChecked {
+		if ($incrementalCheckBox.Checked -eq $true) {
+			$numericUpDown1.Enabled = $true
+			$addAliasButton.Text = "Add Aliases"
+		} elseif ($incrementalCheckBox.Checked -eq $false) {
+			$numericUpDown1.Enabled = $false
+			$addAliasButton.Text = "Add Alias"
+		}
+	}
+	function OnGetAliasButtonClick {
+		Write-Host "GetAliasButton clicked."
+		$progressBar1.Value = 10
+		$infoTextBox.Text = Get-Mailbox $mailboxTextBox.Text | Select-Object -ExpandProperty emailaddresses
+		$progressBar1.Value = 80
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+	function OnCopyButtonClick {
+		Write-Host "CopyButton clicked."
+		$progressBar1.Value = 10
+		Get-Mailbox $mailboxTextBox.Text | Select-Object -ExpandProperty emailaddresses | Set-Clipboard
+		$progressBar1.Value = 80
+		CheckForErrors
+		OperationComplete
+	}
+
+	$emailAliasForm = New-Object System.Windows.Forms.Form
+
 	$groupBox1 = New-Object System.Windows.Forms.GroupBox
-	$mailboxInput = New-Object System.Windows.Forms.TextBox
-	$label1 = New-Object System.Windows.Forms.Label
-	$aliasInput = New-Object System.Windows.Forms.TextBox
-	$label2 = New-Object System.Windows.Forms.Label
-	$createAliasButton = New-Object System.Windows.Forms.Button
+	$addAliasButton = New-Object System.Windows.Forms.Button
+	$aliasLabel = New-Object System.Windows.Forms.Label
+	$aliasTextBox = New-Object System.Windows.Forms.TextBox
+	$mailboxLabel = New-Object System.Windows.Forms.Label
+	$mailboxTextBox = New-Object System.Windows.Forms.TextBox
 	$groupBox2 = New-Object System.Windows.Forms.GroupBox
+	$addAliasBulkButton = New-Object System.Windows.Forms.Button
 	$openTemplateButton = New-Object System.Windows.Forms.Button
-	$createBulkButton = New-Object System.Windows.Forms.Button
+	$groupBox3 = New-Object System.Windows.Forms.GroupBox
+	$getAliasButton = New-Object System.Windows.Forms.Button
+	$infoTextBox = New-Object System.Windows.Forms.TextBox
+	$copyButton = New-Object System.Windows.Forms.Button
+	$incrementalCheckBox = New-Object System.Windows.Forms.CheckBox
+	$numericUpDown1 = New-Object System.Windows.Forms.NumericUpDown
 	#
 	# groupBox1
 	#
-	$groupBox1.Controls.Add($createAliasButton)
-	$groupBox1.Controls.Add($label2)
-	$groupBox1.Controls.Add($aliasInput)
-	$groupBox1.Controls.Add($label1)
-	$groupBox1.Controls.Add($mailboxInput)
+	$groupBox1.Controls.Add($numericUpDown1)
+	$groupBox1.Controls.Add($incrementalCheckBox)
+	$groupBox1.Controls.Add($addAliasButton)
+	$groupBox1.Controls.Add($aliasLabel)
+	$groupBox1.Controls.Add($aliasTextBox)
+	$groupBox1.Controls.Add($mailboxLabel)
+	$groupBox1.Controls.Add($mailboxTextBox)
 	$groupBox1.Location = New-Object System.Drawing.Point(12, 12)
 	$groupBox1.Name = "groupBox1"
-	$groupBox1.Size = New-Object System.Drawing.Size(266, 100)
+	$groupBox1.Size = New-Object System.Drawing.Size(260, 147)
 	$groupBox1.TabIndex = 0
 	$groupBox1.TabStop = $false
 	$groupBox1.Text = "Single"
 	#
-	# mailboxInput
+	# addAliasButton
 	#
-	$mailboxInput.Location = New-Object System.Drawing.Point(60, 19)
-	$mailboxInput.Name = "mailboxInput"
-	$mailboxInput.Size = New-Object System.Drawing.Size(200, 20)
-	$mailboxInput.TabIndex = 0
+	$addAliasButton.Location = New-Object System.Drawing.Point(6, 99)
+	$addAliasButton.Name = "addAliasButton"
+	$addAliasButton.Size = New-Object System.Drawing.Size(248, 23)
+	$addAliasButton.TabIndex = 7
+	$addAliasButton.Text = "Add Alias"
+	$addAliasButton.UseVisualStyleBackColor = $true
+	$addAliasButton.Add_Click({OnAddAliasButtonClick})
 	#
-	# label1
+	# aliasLabel
 	#
-	$label1.AutoSize = $true
-	$label1.Location = New-Object System.Drawing.Point(6, 22)
-	$label1.Name = "label1"
-	$label1.Size = New-Object System.Drawing.Size(48, 13)
-	$label1.TabIndex = 0
-	$label1.Text = "Mailbox:"
+	$aliasLabel.AutoSize = $true
+	$aliasLabel.Location = New-Object System.Drawing.Point(6, 48)
+	$aliasLabel.Name = "aliasLabel"
+	$aliasLabel.Size = New-Object System.Drawing.Size(32, 13)
+	$aliasLabel.TabIndex = 3
+	$aliasLabel.Text = "Alias:"
 	#
-	# aliasInput
+	# aliasTextBox
 	#
-	$aliasInput.Location = New-Object System.Drawing.Point(60, 45)
-	$aliasInput.Name = "aliasInput"
-	$aliasInput.Size = New-Object System.Drawing.Size(200, 20)
-	$aliasInput.TabIndex = 1
+	$aliasTextBox.Location = New-Object System.Drawing.Point(58, 45)
+	$aliasTextBox.Name = "aliasTextBox"
+	$aliasTextBox.Size = New-Object System.Drawing.Size(196, 20)
+	$aliasTextBox.TabIndex = 4
 	#
-	# label2
+	# mailboxLabel
 	#
-	$label2.AutoSize = $true
-	$label2.Location = New-Object System.Drawing.Point(6, 48)
-	$label2.Name = "label2"
-	$label2.Size = New-Object System.Drawing.Size(39, 13)
-	$label2.TabIndex = 1
-	$label2.Text = "Alias:"
+	$mailboxLabel.AutoSize = $true
+	$mailboxLabel.Location = New-Object System.Drawing.Point(6, 22)
+	$mailboxLabel.Name = "mailboxLabel"
+	$mailboxLabel.Size = New-Object System.Drawing.Size(46, 13)
+	$mailboxLabel.TabIndex = 1
+	$mailboxLabel.Text = "Mailbox:"
 	#
-	# createAliasButton
+	# mailboxTextBox
 	#
-	$createAliasButton.Location = New-Object System.Drawing.Point(6, 71)
-	$createAliasButton.Name = "createAliasButton"
-	$createAliasButton.Size = New-Object System.Drawing.Size(254, 23)
-	$createAliasButton.TabIndex = 2
-	$createAliasButton.Text = "Add Alias"
-	$createAliasButton.UseVisualStyleBackColor = $true
-	$createAliasButton.Add_Click({OnCreateAliasButtonClick})
+	$mailboxTextBox.Location = New-Object System.Drawing.Point(58, 19)
+	$mailboxTextBox.Name = "mailboxTextBox"
+	$mailboxTextBox.Size = New-Object System.Drawing.Size(196, 20)
+	$mailboxTextBox.TabIndex = 2
 	#
 	# groupBox2
 	#
-	$groupBox2.Controls.Add($createBulkButton)
+	$groupBox2.Controls.Add($addAliasBulkButton)
 	$groupBox2.Controls.Add($openTemplateButton)
-	$groupBox2.Location = New-Object System.Drawing.Point(12, 118)
+	$groupBox2.Location = New-Object System.Drawing.Point(12, 165)
 	$groupBox2.Name = "groupBox2"
-	$groupBox2.Size = New-Object System.Drawing.Size(266, 77)
-	$groupBox2.TabIndex = 3
+	$groupBox2.Size = New-Object System.Drawing.Size(260, 77)
+	$groupBox2.TabIndex = 8
 	$groupBox2.TabStop = $false
 	$groupBox2.Text = "Bulk"
+	#
+	# addAliasBulkButton
+	#
+	$addAliasBulkButton.Location = New-Object System.Drawing.Point(6, 48)
+	$addAliasBulkButton.Name = "addAliasBulkButton"
+	$addAliasBulkButton.Size = New-Object System.Drawing.Size(248, 23)
+	$addAliasBulkButton.TabIndex = 10
+	$addAliasBulkButton.Text = "Add Aliases"
+	$addAliasBulkButton.UseVisualStyleBackColor = $true
+	$addAliasBulkButton.Add_Click({OnAddAliasBulkButtonClick})
 	#
 	# openTemplateButton
 	#
 	$openTemplateButton.Location = New-Object System.Drawing.Point(6, 19)
 	$openTemplateButton.Name = "openTemplateButton"
-	$openTemplateButton.Size = New-Object System.Drawing.Size(254, 23)
-	$openTemplateButton.TabIndex = 3
+	$openTemplateButton.Size = New-Object System.Drawing.Size(248, 23)
+	$openTemplateButton.TabIndex = 9
 	$openTemplateButton.Text = "Open Template"
 	$openTemplateButton.UseVisualStyleBackColor = $true
 	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
 	#
-	# createBulkButton
+	# groupBox3
 	#
-	$createBulkButton.Location = New-Object System.Drawing.Point(6, 48)
-	$createBulkButton.Name = "createBulkButton"
-	$createBulkButton.Size = New-Object System.Drawing.Size(254, 23)
-	$createBulkButton.TabIndex = 4
-	$createBulkButton.Text = "Add Aliases"
-	$createBulkButton.UseVisualStyleBackColor = $true
-	$createBulkButton.Add_Click({OnCreateBulkButtonClick})
+	$groupBox3.Controls.Add($copyButton)
+	$groupBox3.Controls.Add($infoTextBox)
+	$groupBox3.Controls.Add($getAliasButton)
+	$groupBox3.Location = New-Object System.Drawing.Point(278, 12)
+	$groupBox3.Name = "groupBox3"
+	$groupBox3.Size = New-Object System.Drawing.Size(260, 230)
+	$groupBox3.TabIndex = 11
+	$groupBox3.TabStop = $false
+	$groupBox3.Text = "Info"
 	#
-	# scriptForm8
+	# getAliasButton
 	#
-	$scriptForm8.ClientSize = New-Object System.Drawing.Size(290, 207)
-	$scriptForm8.Controls.Add($groupBox2)
-	$scriptForm8.Controls.Add($groupBox1)
-	$scriptForm8.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-	$scriptForm8.HelpButton = $false
-	$scriptForm8.MaximizeBox = $false
-	$scriptForm8.MinimizeBox = $false
-	$scriptForm8.Name = "scriptForm8"
-	$scriptForm8.ShowIcon = $false
-	$scriptForm8.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-	$scriptForm8.Text = "Add-EmailAlias"
-	$scriptForm8.Add_Shown({$scriptForm8.Activate()})
+	$getAliasButton.Location = New-Object System.Drawing.Point(6, 19)
+	$getAliasButton.Name = "getAliasButton"
+	$getAliasButton.Size = New-Object System.Drawing.Size(248, 23)
+	$getAliasButton.TabIndex = 12
+	$getAliasButton.Text = "Get Current Aliases"
+	$getAliasButton.UseVisualStyleBackColor = $true
+	$getAliasButton.Add_Click({OnGetAliasButtonClick})
+	#
+	# infoTextBox
+	#
+	$infoTextBox.Location = New-Object System.Drawing.Point(6, 48)
+	$infoTextBox.Multiline = $true
+	$infoTextBox.Name = "infoTextBox"
+	$infoTextBox.ReadOnly = $true
+	$infoTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+	$infoTextBox.Size = New-Object System.Drawing.Size(248, 147)
+	$infoTextBox.TabIndex = 13
+	#
+	# copyButton
+	#
+	$copyButton.Location = New-Object System.Drawing.Point(6, 201)
+	$copyButton.Name = "copyButton"
+	$copyButton.Size = New-Object System.Drawing.Size(248, 23)
+	$copyButton.TabIndex = 14
+	$copyButton.Text = "Copy to Clipboard"
+	$copyButton.UseVisualStyleBackColor = $true
+	$copyButton.Add_Click({OnCopyButtonClick})
+	#
+	# incrementalCheckBox
+	#
+	$incrementalCheckBox.AutoSize = $true
+	$incrementalCheckBox.Location = New-Object System.Drawing.Point(9, 74)
+	$incrementalCheckBox.Name = "incrementalCheckBox"
+	$incrementalCheckBox.Size = New-Object System.Drawing.Size(151, 17)
+	$incrementalCheckBox.TabIndex = 5
+	$incrementalCheckBox.Text = "Create Incremental Aliases"
+	$incrementalCheckBox.UseVisualStyleBackColor = $true
+	$incrementalCheckBox.Add_CheckedChanged({OnIncrementalCheckBoxChecked})
+	#
+	# numericUpDown1
+	#
+	$numericUpDown1.Enabled = $false
+	$numericUpDown1.Location = New-Object System.Drawing.Point(166, 73)
+	$numericUpDown1.Maximum = New-Object decimal(@(
+	1000,
+	0,
+	0,
+	0))
+	$numericUpDown1.Name = "numericUpDown1"
+	$numericUpDown1.Size = New-Object System.Drawing.Size(88, 20)
+	$numericUpDown1.TabIndex = 6
+	#
+	# emailAliasForm
+	#
+	$emailAliasForm.ClientSize = New-Object System.Drawing.Size(550, 254)
+	$emailAliasForm.Controls.Add($groupBox3)
+	$emailAliasForm.Controls.Add($groupBox1)
+	$emailAliasForm.Controls.Add($groupBox2)
+	$emailAliasForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$emailAliasForm.MaximizeBox = $false
+	$emailAliasForm.MinimizeBox = $false
+	$emailAliasForm.Name = "emailAliasForm"
+	$emailAliasForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$emailAliasForm.Text = "Add-EmailAlias"
 
-	Write-Host "Loaded ScriptForm8."
+	$emailAliasForm.Add_Shown({$emailAliasForm.Activate()})
+
+	$progressBar1.Value = 100
+	Write-Host "Loaded EmailAliasForm."
 	$progressBar1.Value = 0
 
-	$scriptForm8.ShowDialog()
-	$scriptForm8.Dispose()
+	$emailAliasForm.ShowDialog()
+	$emailAliasForm.Dispose()
 
 	Stop-Transcript
 }
@@ -2621,6 +2752,296 @@ function Remove-DistributionListMember {
 
 	$scriptForm8.ShowDialog()
 	$scriptForm8.Dispose()
+
+	Stop-Transcript
+}
+function Remove-EmailAlias {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Remove-EmailAlias.txt"
+	Write-Host "Running Remove-EmailAlias script..."
+	$progressBar1.Value = 10
+
+	function OnRemoveAliasButtonClick {
+		Write-Host "removeAliasButton clicked."
+		switch ($incrementalCheckBox.Checked) {
+			$true {
+				Write-Host "Removing incremental aliases..."
+				$progressBar1.Value = 10
+				$mailbox = $mailboxTextBox.Text
+				$alias = $aliasTextBox.Text
+				$splitAlias = $alias -split '\@'
+				$aliasName = $splitAlias[0]
+				$aliasDomain = $splitAlias[1]
+				$progressBar1.Value = 30
+				for ($i = 0; $i -lt $numericUpDown1.Value; $i++) {
+					$progressBar1.Value = 10
+					$completeAlias = $aliasName + [string]$i + $aliasDomain
+					Set-Mailbox $mailbox -EmailAddresses @{Remove= $completeAlias}
+					Write-Host "Removed $completeAlias from $mailbox."
+					$progressBar1.Value = 90
+				}
+				$progressBar1.Value = 90
+				CheckForErrors
+				OperationComplete
+			}
+			$false {
+				Write-Host "Removing single alias..."
+				$progressBar1.Value = 10
+				$mailbox = $mailboxTextBox.Text
+				$alias = $aliasTextBox.Text
+				$progressBar1.Value = 30
+				Set-Mailbox $mailbox -EmailAddresses @{Remove= $alias}
+				$progressBar1.Value = 50
+				Write-Host "Removed $alias from $mailbox."
+				$progressBar1.Value = 80
+				CheckForErrors
+				OperationComplete
+			}
+			Default {
+				Write-Host "An error seems to have occurred."
+				CheckForErrors
+			}
+		}
+	}
+	function OnOpenTemplateButtonClick {
+		$progressBar1.Value = 10
+		Invoke-Item ".\Templates\Remove-EmailAlias.csv"
+		$progressBar1.Value = 100
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+	function OnRemoveAliasBulkButtonClick {
+		Import-Csv ".\Templates\Remove-EmailAlias.csv" | ForEach-Object {
+			$progressBar1.Value = 20
+			$mailbox = $_.Mailbox
+			$alias = $_.Alias
+			$progressBar1.Value = 50
+			Set-Mailbox $mailbox -EmailAddresses @{Remove= $alias}
+			Write-Host "Removed $alias from $mailbox."
+			$progressBar1.Value = 80
+		}
+		CheckForErrors
+		OperationComplete
+	}
+	function OnIncrementalCheckBoxChecked {
+		if ($incrementalCheckBox.Checked -eq $true) {
+			$numericUpDown1.Enabled = $true
+			$removeAliasButton.Text = "Remove Aliases"
+		} elseif ($incrementalCheckBox.Checked -eq $false) {
+			$numericUpDown1.Enabled = $false
+			$removeAliasButton.Text = "Remove Alias"
+		}
+	}
+	function OnGetAliasButtonClick {
+		Write-Host "GetAliasButton clicked."
+		$progressBar1.Value = 10
+		$infoTextBox.Text = Get-Mailbox $mailboxTextBox.Text | Select-Object -ExpandProperty emailaddresses
+		$progressBar1.Value = 80
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+	function OnCopyButtonClick {
+		Write-Host "CopyButton clicked."
+		$progressBar1.Value = 10
+		Get-Mailbox $mailboxTextBox.Text | Select-Object -ExpandProperty emailaddresses | Set-Clipboard
+		$progressBar1.Value = 80
+		CheckForErrors
+		OperationComplete
+	}
+
+	$emailAliasForm = New-Object System.Windows.Forms.Form
+
+	$groupBox1 = New-Object System.Windows.Forms.GroupBox
+	$removeAliasButton = New-Object System.Windows.Forms.Button
+	$aliasLabel = New-Object System.Windows.Forms.Label
+	$aliasTextBox = New-Object System.Windows.Forms.TextBox
+	$mailboxLabel = New-Object System.Windows.Forms.Label
+	$mailboxTextBox = New-Object System.Windows.Forms.TextBox
+	$groupBox2 = New-Object System.Windows.Forms.GroupBox
+	$removeAliasBulkButton = New-Object System.Windows.Forms.Button
+	$openTemplateButton = New-Object System.Windows.Forms.Button
+	$groupBox3 = New-Object System.Windows.Forms.GroupBox
+	$getAliasButton = New-Object System.Windows.Forms.Button
+	$infoTextBox = New-Object System.Windows.Forms.TextBox
+	$copyButton = New-Object System.Windows.Forms.Button
+	$incrementalCheckBox = New-Object System.Windows.Forms.CheckBox
+	$numericUpDown1 = New-Object System.Windows.Forms.NumericUpDown
+	#
+	# groupBox1
+	#
+	$groupBox1.Controls.Add($numericUpDown1)
+	$groupBox1.Controls.Add($incrementalCheckBox)
+	$groupBox1.Controls.Add($removeAliasButton)
+	$groupBox1.Controls.Add($aliasLabel)
+	$groupBox1.Controls.Add($aliasTextBox)
+	$groupBox1.Controls.Add($mailboxLabel)
+	$groupBox1.Controls.Add($mailboxTextBox)
+	$groupBox1.Location = New-Object System.Drawing.Point(12, 12)
+	$groupBox1.Name = "groupBox1"
+	$groupBox1.Size = New-Object System.Drawing.Size(260, 147)
+	$groupBox1.TabIndex = 0
+	$groupBox1.TabStop = $false
+	$groupBox1.Text = "Single"
+	#
+	# removeAliasButton
+	#
+	$removeAliasButton.Location = New-Object System.Drawing.Point(6, 99)
+	$removeAliasButton.Name = "removeAliasButton"
+	$removeAliasButton.Size = New-Object System.Drawing.Size(248, 23)
+	$removeAliasButton.TabIndex = 7
+	$removeAliasButton.Text = "Remove Alias"
+	$removeAliasButton.UseVisualStyleBackColor = $true
+	$removeAliasButton.Add_Click({OnRemoveAliasButtonClick})
+	#
+	# aliasLabel
+	#
+	$aliasLabel.AutoSize = $true
+	$aliasLabel.Location = New-Object System.Drawing.Point(6, 48)
+	$aliasLabel.Name = "aliasLabel"
+	$aliasLabel.Size = New-Object System.Drawing.Size(32, 13)
+	$aliasLabel.TabIndex = 3
+	$aliasLabel.Text = "Alias:"
+	#
+	# aliasTextBox
+	#
+	$aliasTextBox.Location = New-Object System.Drawing.Point(58, 45)
+	$aliasTextBox.Name = "aliasTextBox"
+	$aliasTextBox.Size = New-Object System.Drawing.Size(196, 20)
+	$aliasTextBox.TabIndex = 4
+	#
+	# mailboxLabel
+	#
+	$mailboxLabel.AutoSize = $true
+	$mailboxLabel.Location = New-Object System.Drawing.Point(6, 22)
+	$mailboxLabel.Name = "mailboxLabel"
+	$mailboxLabel.Size = New-Object System.Drawing.Size(46, 13)
+	$mailboxLabel.TabIndex = 1
+	$mailboxLabel.Text = "Mailbox:"
+	#
+	# mailboxTextBox
+	#
+	$mailboxTextBox.Location = New-Object System.Drawing.Point(58, 19)
+	$mailboxTextBox.Name = "mailboxTextBox"
+	$mailboxTextBox.Size = New-Object System.Drawing.Size(196, 20)
+	$mailboxTextBox.TabIndex = 2
+	#
+	# groupBox2
+	#
+	$groupBox2.Controls.Add($removeAliasBulkButton)
+	$groupBox2.Controls.Add($openTemplateButton)
+	$groupBox2.Location = New-Object System.Drawing.Point(12, 165)
+	$groupBox2.Name = "groupBox2"
+	$groupBox2.Size = New-Object System.Drawing.Size(260, 77)
+	$groupBox2.TabIndex = 8
+	$groupBox2.TabStop = $false
+	$groupBox2.Text = "Bulk"
+	#
+	# removeAliasBulkButton
+	#
+	$removeAliasBulkButton.Location = New-Object System.Drawing.Point(6, 48)
+	$removeAliasBulkButton.Name = "removeAliasBulkButton"
+	$removeAliasBulkButton.Size = New-Object System.Drawing.Size(248, 23)
+	$removeAliasBulkButton.TabIndex = 10
+	$removeAliasBulkButton.Text = "Remove Aliases"
+	$removeAliasBulkButton.UseVisualStyleBackColor = $true
+	$removeAliasBulkButton.Add_Click({OnRemoveAliasBulkButtonClick})
+	#
+	# openTemplateButton
+	#
+	$openTemplateButton.Location = New-Object System.Drawing.Point(6, 19)
+	$openTemplateButton.Name = "openTemplateButton"
+	$openTemplateButton.Size = New-Object System.Drawing.Size(248, 23)
+	$openTemplateButton.TabIndex = 9
+	$openTemplateButton.Text = "Open Template"
+	$openTemplateButton.UseVisualStyleBackColor = $true
+	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
+	#
+	# groupBox3
+	#
+	$groupBox3.Controls.Add($copyButton)
+	$groupBox3.Controls.Add($infoTextBox)
+	$groupBox3.Controls.Add($getAliasButton)
+	$groupBox3.Location = New-Object System.Drawing.Point(278, 12)
+	$groupBox3.Name = "groupBox3"
+	$groupBox3.Size = New-Object System.Drawing.Size(260, 230)
+	$groupBox3.TabIndex = 11
+	$groupBox3.TabStop = $false
+	$groupBox3.Text = "Info"
+	#
+	# getAliasButton
+	#
+	$getAliasButton.Location = New-Object System.Drawing.Point(6, 19)
+	$getAliasButton.Name = "getAliasButton"
+	$getAliasButton.Size = New-Object System.Drawing.Size(248, 23)
+	$getAliasButton.TabIndex = 12
+	$getAliasButton.Text = "Get Current Aliases"
+	$getAliasButton.UseVisualStyleBackColor = $true
+	$getAliasButton.Add_Click({OnGetAliasButtonClick})
+	#
+	# infoTextBox
+	#
+	$infoTextBox.Location = New-Object System.Drawing.Point(6, 48)
+	$infoTextBox.Multiline = $true
+	$infoTextBox.Name = "infoTextBox"
+	$infoTextBox.ReadOnly = $true
+	$infoTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+	$infoTextBox.Size = New-Object System.Drawing.Size(248, 147)
+	$infoTextBox.TabIndex = 13
+	#
+	# copyButton
+	#
+	$copyButton.Location = New-Object System.Drawing.Point(6, 201)
+	$copyButton.Name = "copyButton"
+	$copyButton.Size = New-Object System.Drawing.Size(248, 23)
+	$copyButton.TabIndex = 14
+	$copyButton.Text = "Copy to Clipboard"
+	$copyButton.UseVisualStyleBackColor = $true
+	$copyButton.Add_Click({OnCopyButtonClick})
+	#
+	# incrementalCheckBox
+	#
+	$incrementalCheckBox.AutoSize = $true
+	$incrementalCheckBox.Location = New-Object System.Drawing.Point(9, 74)
+	$incrementalCheckBox.Name = "incrementalCheckBox"
+	$incrementalCheckBox.Size = New-Object System.Drawing.Size(151, 17)
+	$incrementalCheckBox.TabIndex = 5
+	$incrementalCheckBox.Text = "Remove Incremental Aliases"
+	$incrementalCheckBox.UseVisualStyleBackColor = $true
+	$incrementalCheckBox.Add_CheckedChanged({OnIncrementalCheckBoxChecked})
+	#
+	# numericUpDown1
+	#
+	$numericUpDown1.Enabled = $false
+	$numericUpDown1.Location = New-Object System.Drawing.Point(166, 73)
+	$numericUpDown1.Maximum = New-Object decimal(@(
+	1000,
+	0,
+	0,
+	0))
+	$numericUpDown1.Name = "numericUpDown1"
+	$numericUpDown1.Size = New-Object System.Drawing.Size(88, 20)
+	$numericUpDown1.TabIndex = 6
+	#
+	# emailAliasForm
+	#
+	$emailAliasForm.ClientSize = New-Object System.Drawing.Size(550, 254)
+	$emailAliasForm.Controls.Add($groupBox3)
+	$emailAliasForm.Controls.Add($groupBox1)
+	$emailAliasForm.Controls.Add($groupBox2)
+	$emailAliasForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$emailAliasForm.MaximizeBox = $false
+	$emailAliasForm.MinimizeBox = $false
+	$emailAliasForm.Name = "emailAliasForm"
+	$emailAliasForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$emailAliasForm.Text = "Remove-EmailAlias"
+
+	$emailAliasForm.Add_Shown({$emailAliasForm.Activate()})
+
+	$progressBar1.Value = 100
+	Write-Host "Loaded EmailAliasForm."
+	$progressBar1.Value = 0
+
+	$emailAliasForm.ShowDialog()
+	$emailAliasForm.Dispose()
 
 	Stop-Transcript
 }
