@@ -181,7 +181,7 @@ function Add-ADAccounts {
 	$scriptForm9.MinimizeBox = $false
 	$scriptForm9.Name = "scriptForm9"
 	$scriptForm9.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-	$scriptForm9.Text = "Add-ADUsers"
+	$scriptForm9.Text = "Add-ADAccounts"
 	$scriptForm9.Add_Shown({$scriptForm9.Activate()})
 
 	Write-Host "Loaded ScriptForm9."
@@ -415,7 +415,7 @@ function Add-ADAndEmailAccounts {
 	$scriptForm9.MinimizeBox = $false
 	$scriptForm9.Name = "scriptForm9"
 	$scriptForm9.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-	$scriptForm9.Text = "Add-ADUsersAndEmail"
+	$scriptForm9.Text = "Add-ADAndEmailAccounts"
 	$scriptForm9.Add_Shown({$scriptForm9.Activate()})
 
 	Write-Host "Loaded ScriptForm9."
