@@ -6,7 +6,7 @@ $version = "v2.10.2"
 #Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber
 
 # Functions for each script. Might move these into separate ps1 files at some point.
-function Add-ADUsers {
+function Add-ADAccounts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADUsers.txt"
 	Write-Host "Running Add-ADUsers script..."
 	$progressBar1.Value = 10
@@ -192,7 +192,7 @@ function Add-ADUsers {
 
 	Stop-Transcript
 }
-function Add-ADUsersAndEmail {
+function Add-ADAndEmailAccounts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADUsersAndEmail.txt"
 	Write-Host "Running Add-ADUsersAndEmail script..."
 	$progressBar1.Value = 10
@@ -3593,8 +3593,8 @@ function Show-Information {
 
 # This list is what will be visible in the scriptSelect ComboBox
 $scriptList = @(
-	"Add-ADUsers",
-	"Add-ADUsersAndEmail",
+	"Add-ADAccounts",
+	"Add-ADAndEmailAccounts",
 	"Add-AuthenticationPhoneMethod",
 	"Add-Contacts",
 	"Add-DistributionListMember",
@@ -3631,8 +3631,8 @@ function OnRunButtonClick {
 
     # Perform actions based on the selected script
     switch ($selectedScript) {
-        "Add-ADUsers" { Add-ADUsers }
-        "Add-ADUsersAndEmail" { Add-ADUsersAndEmail }
+        "Add-ADUsers" { Add-ADAccounts }
+        "Add-ADUsersAndEmail" { Add-ADAndEmailAccounts }
 		"Add-AuthenticationPhoneMethod" { Add-AuthenticationPhoneMethod }
 		"Add-Contacts" { Add-Contacts }
 		"Add-DistributionListMember" { Add-DistributionListMember }
