@@ -3002,7 +3002,7 @@ function Remove-EmailAlias {
 	$incrementalCheckBox.AutoSize = $true
 	$incrementalCheckBox.Location = New-Object System.Drawing.Point(9, 74)
 	$incrementalCheckBox.Name = "incrementalCheckBox"
-	$incrementalCheckBox.Size = New-Object System.Drawing.Size(140, 17)
+	$incrementalCheckBox.Size = New-Object System.Drawing.Size(130, 17)
 	$incrementalCheckBox.TabIndex = 5
 	$incrementalCheckBox.Text = "Remove Incremental Aliases"
 	$incrementalCheckBox.UseVisualStyleBackColor = $true
