@@ -1125,7 +1125,7 @@ function Add-EmailAlias {
 				$progressBar1.Value = 30
 				for ($i = 0; $i -lt $numericUpDown1.Value; $i++) {
 					$progressBar1.Value = 10
-					$completeAlias = $aliasName + [string]$i + $aliasDomain
+					$completeAlias = $aliasName + [string]$i + "@" + $aliasDomain
 					Set-Mailbox $mailbox -EmailAddresses @{Add= $completeAlias}
 					Write-Host "Added $completeAlias to $mailbox."
 					$progressBar1.Value = 90
@@ -2774,7 +2774,7 @@ function Remove-EmailAlias {
 				$progressBar1.Value = 30
 				for ($i = 0; $i -lt $numericUpDown1.Value; $i++) {
 					$progressBar1.Value = 10
-					$completeAlias = $aliasName + [string]$i + $aliasDomain
+					$completeAlias = $aliasName + [string]$i + "@" + $aliasDomain
 					Set-Mailbox $mailbox -EmailAddresses @{Remove= $completeAlias}
 					Write-Host "Removed $completeAlias from $mailbox."
 					$progressBar1.Value = 90
