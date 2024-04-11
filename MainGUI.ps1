@@ -1,4 +1,4 @@
-$version = "v2.11.2"
+$version = "v2.11.3"
 #Requires -RunAsAdministrator
 #GUI generated with ConvertForm module version 2.0.0
 #Need these 2 modules:
@@ -7,7 +7,7 @@ $version = "v2.11.2"
 
 # Functions for each script. Might move these into separate ps1 files at some point.
 function Add-ADAccounts {
-	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADUsers.txt"
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADAccounts.txt"
 	Write-Host "Running Add-ADUsers script..."
 	$progressBar1.Value = 10
 	Write-Host "Importing ActiveDirectory Module..."
@@ -22,14 +22,14 @@ function Add-ADAccounts {
 	function OnOpenTemplateButtonClick {
 		Write-Host "Open template button clicked."
 		$progressBar1.Value = 10
-		Invoke-Item ".\Templates\Add-ADUsers.csv"
+		Invoke-Item ".\Templates\Add-ADAccounts.csv"
 		$progressBar1.Value = 100
 		CheckForErrors
 		$progressBar1.Value = 0
 	}
 	function OnCreateAccountsButtonClick {
 		$progressBar1.Value = 10
-		$csvFile = Import-Csv -Path ".\Templates\Add-ADUsers.csv"
+		$csvFile = Import-Csv -Path ".\Templates\Add-ADAccounts.csv"
 		$progressBar1.Value = 20
 		CheckForErrors
 
@@ -193,7 +193,7 @@ function Add-ADAccounts {
 	Stop-Transcript
 }
 function Add-ADAndEmailAccounts {
-	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADUsersAndEmail.txt"
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADAndEmailAccounts.txt"
 	Write-Host "Running Add-ADUsersAndEmail script..."
 	$progressBar1.Value = 10
 	Write-Host "Importing ActiveDirectory Module..."
@@ -208,7 +208,7 @@ function Add-ADAndEmailAccounts {
 	function OnOpenTemplateButtonClick {
 		Write-Host "Open template button clicked."
 		$progressBar1.Value = 10
-		Invoke-Item ".\Templates\Add-ADUsersAndEmail.csv"
+		Invoke-Item ".\Templates\Add-ADAndEmailAccounts.csv"
 		$progressBar1.Value = 100
 		CheckForErrors
 		$progressBar1.Value = 0
@@ -216,7 +216,7 @@ function Add-ADAndEmailAccounts {
 
 	function OnCreateAccountsButtonClick {
 		$progressBar1.Value = 10
-		$csvFile = Import-Csv -Path ".\Templates\Add-ADUsersAndEmail.csv"
+		$csvFile = Import-Csv -Path ".\Templates\Add-ADAndEmailAccounts.csv"
 		$progressBar1.Value = 30
 		CheckForErrors
 		foreach ($row in $csvFile) {
@@ -4053,8 +4053,8 @@ function OnRunButtonClick {
 
     # Perform actions based on the selected script
     switch ($selectedScript) {
-        "Add-ADUsers" { Add-ADAccounts }
-        "Add-ADUsersAndEmail" { Add-ADAndEmailAccounts }
+        "Add-ADAccounts" { Add-ADAccounts }
+        "Add-ADAndEmailAccounts" { Add-ADAndEmailAccounts }
 		"Add-AuthenticationPhoneMethod" { Add-AuthenticationPhoneMethod }
 		"Add-Contacts" { Add-Contacts }
 		"Add-DistributionListMember" { Add-DistributionListMember }
