@@ -31,7 +31,7 @@ WizardStyle=modern
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 
 [Files]
 Source: ".\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
@@ -40,6 +40,7 @@ Source: ".\Templates\*"; DestDir: "{app}\Templates"; Flags: ignoreversion recurs
 Source: ".\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\Images\*"; DestDir: "{app}\Images"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ".\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\settings.ini"; DestDir: "{app}"; Flags: ignoreversion onlyifdoesntexist
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
