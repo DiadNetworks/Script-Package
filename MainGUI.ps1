@@ -5,6 +5,41 @@ $version = "v2.11.3"
 #Install-Module -Name Microsoft.Graph -Force -AllowClobber
 #Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber
 
+# Settings retrieval function
+function LoadSettings {
+	Write-Host "Loading settings from settings.ini..."
+	Get-Content “.\settings.ini” | foreach-object -begin {$h=@{}} -process { $k = [regex]::split($_,’=’); if(($k[0].CompareTo(“”) -ne 0)     -and ($k[0].StartsWith(“[“) -ne $True)) { $h.Add($k[0], $k[1]) } }
+	$progressBarType = $h.Get_Item(“ProgressBarType”)
+	$enableVisualStyles = $h.Get_Item(“EnableVisualStyles”)
+
+	# Set progress bar style
+	if ($progressBarType -eq 0) {
+		$progressBar1.Style = "Blocks"
+		Write-Host "Set progress bar type to Blocks."
+	}
+	elseif ($progressBarType -eq 1) {
+		$progressBar1.Style = "Continuous"
+		Write-Host "Set progress bar type to Continuous."
+	}
+	else {
+		Write-Host "Invalid value, using default progress bar type."
+		$progressBar1.Style = "Continuous"
+	}
+	# Set visual styles
+	if ($enableVisualStyles -eq 0) {
+		Write-Host "Visual styles are disabled."
+	}
+	elseif ($enableVisualStyles -eq 1) {
+		[System.Windows.Forms.Application]::EnableVisualStyles()
+		Write-Host "Visual styles are enabled."
+	}
+	else {
+		Write-Host "Invalid value, using default style."
+		[System.Windows.Forms.Application]::EnableVisualStyles()
+	}
+
+	Write-Host "Loaded settings."
+}
 # Functions for each script. Might move these into separate ps1 files at some point.
 function Add-ADAccounts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADAccounts.txt"
@@ -4077,6 +4112,7 @@ function OnRunButtonClick {
 		"Set-NTP" { Set-NTP }
 		"Show-Information" { Show-Information }
 		"Debug" { Start-Process pwsh .\MainGUI.ps1 }
+		"Reload-Settings" { LoadSettings }
         default { Write-Host "No script selected." }
     }
 }
@@ -4122,8 +4158,6 @@ function OnSignOutButtonClick {
 # Loading external assemblies
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-# EnableVisualStyles
-[System.Windows.Forms.Application]::EnableVisualStyles()
 
 $MainWindow = New-Object System.Windows.Forms.Form
 
@@ -4391,6 +4425,9 @@ function ShowWarningForm {
 	$warningTextLabel.Text = $warningText
 	$warningForm.ShowDialog()
 }
+
+# Load settings from settings.ini
+LoadSettings
 
 Write-Host "Loaded MainGUI."
 CheckForErrors
