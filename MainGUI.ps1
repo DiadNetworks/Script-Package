@@ -23,7 +23,7 @@ function LoadSettings {
 	}
 	else {
 		Write-Host "Invalid value, using default progress bar type."
-		$progressBar1.Style = "Continuous"
+		$progressBar1.Style = "Blocks"
 	}
 	# Set visual styles
 	if ($enableVisualStyles -eq 0) {
@@ -4198,7 +4198,7 @@ $progressBar1.Location = New-Object System.Drawing.Point(12, 97)
 $progressBar1.Name = "progressBar1"
 $progressBar1.Size = New-Object System.Drawing.Size(275, 23)
 $progressBar1.TabIndex = 2
-$progressBar1.Style = "Continuous"
+$progressBar1.Style = "Blocks"
 #
 # signInButton
 #
