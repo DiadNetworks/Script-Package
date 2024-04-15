@@ -628,6 +628,7 @@ function Add-AutoReply {
 	Write-Host "Running Add-AutoReply script..."
 
 	function OnConfirmAutoReplyButtonClick {
+		$progressBar1.Value = 20
 		Write-Host "ConfirmAutoReplyButton clicked, adding auto-replies..."
 		$internalMessage = $internalReplyTextBox.Text
 		$externalMessage = $externalReplyTextBox.Text
@@ -638,11 +639,15 @@ function Add-AutoReply {
 			$startTime = $startDatePicker.Value
 			$endTime = $endDatePicker.Value
 			Set-MailboxAutoReplyConfiguration -Identity $mailbox -AutoReplyState Scheduled -StartTime $startTime -EndTime $endTime -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
+			$progressBar1.Value = 50
 		}
 		else {
 			Write-Host "Use schedule isn't checked, creating auto-reply..."
 			Set-MailboxAutoReplyConfiguration -Identity $mailbox -AutoReplyState Enabled -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
+			$progressBar1.Value = 50
 		}
+		CheckForErrors
+		OperationComplete
 	}
 
 	$addAutoReplyForm = New-Object System.Windows.Forms.Form
@@ -2331,6 +2336,9 @@ function Block-User {
 						Write-Host "Use schedule isn't checked, creating auto-reply..."
 						Set-MailboxAutoReplyConfiguration -Identity $user -AutoReplyState Enabled -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
 					}
+					CheckForErrors
+					OperationComplete
+					$addAutoReplyForm.Close()
 				}
 
 				$addAutoReplyForm = New-Object System.Windows.Forms.Form
