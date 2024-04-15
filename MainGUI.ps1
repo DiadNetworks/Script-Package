@@ -623,6 +623,203 @@ function Add-AuthenticationPhoneMethod {
 
 	Stop-Transcript
 }
+function Add-AutoReply {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-AutoReply.txt"
+	Write-Host "Running Add-AutoReply script..."
+
+	function OnConfirmAutoReplyButtonClick {
+		Write-Host "ConfirmAutoReplyButton clicked, adding auto-replies..."
+		$internalMessage = $internalReplyTextBox.Text
+		$externalMessage = $externalReplyTextBox.Text
+		$mailbox = $emailInputBox.Text
+
+		if ($useScheduleCheckBox.Checked -eq $true) {
+			Write-Host "Use schedule is checked, creating auto-reply with schedule..."
+			$startTime = $startDatePicker.Value
+			$endTime = $endDatePicker.Value
+			Set-MailboxAutoReplyConfiguration -Identity $mailbox -AutoReplyState Scheduled -StartTime $startTime -EndTime $endTime -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
+		}
+		else {
+			Write-Host "Use schedule isn't checked, creating auto-reply..."
+			Set-MailboxAutoReplyConfiguration -Identity $mailbox -AutoReplyState Enabled -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
+		}
+	}
+
+	$addAutoReplyForm = New-Object System.Windows.Forms.Form
+
+	$internalReplyLabel = New-Object System.Windows.Forms.Label
+	$internalReplyTextBox = New-Object System.Windows.Forms.TextBox
+	$externalReplyTextBox = New-Object System.Windows.Forms.TextBox
+	$externalReplyLabel = New-Object System.Windows.Forms.Label
+	$matchRepliesCheckBox = New-Object System.Windows.Forms.CheckBox
+	$confirmAutoReplyButton = New-Object System.Windows.Forms.Button
+	$startDatePicker = New-Object System.Windows.Forms.DateTimePicker
+	$useScheduleCheckBox = New-Object System.Windows.Forms.CheckBox
+	$endDatePicker = New-Object System.Windows.Forms.DateTimePicker
+	$startDateLabel = New-Object System.Windows.Forms.Label
+	$endDateLabel = New-Object System.Windows.Forms.Label
+	$emailLabel = New-Object System.Windows.Forms.Label
+	$emailInputBox = New-Object System.Windows.Forms.TextBox
+	#
+	# internalReplyLabel
+	#
+	$internalReplyLabel.AutoSize = $true
+	$internalReplyLabel.Location = New-Object System.Drawing.Point(8, 43)
+	$internalReplyLabel.Name = "internalReplyLabel"
+	$internalReplyLabel.Size = New-Object System.Drawing.Size(100, 13)
+	$internalReplyLabel.TabIndex = 2
+	$internalReplyLabel.Text = "Internal Auto-Reply:"
+	#
+	# internalReplyTextBox
+	#
+	$internalReplyTextBox.Location = New-Object System.Drawing.Point(12, 59)
+	$internalReplyTextBox.Multiline = $true
+	$internalReplyTextBox.Name = "internalReplyTextBox"
+	$internalReplyTextBox.Size = New-Object System.Drawing.Size(200, 224)
+	$internalReplyTextBox.TabIndex = 3
+	$internalReplyTextBox.Add_TextChanged({
+		if ($matchRepliesCheckBox.Checked -eq $true) {$externalReplyTextBox.Text = $internalReplyTextBox.Text}
+	})
+	#
+	# externalReplyTextBox
+	#
+	$externalReplyTextBox.Location = New-Object System.Drawing.Point(222, 59)
+	$externalReplyTextBox.Multiline = $true
+	$externalReplyTextBox.Name = "externalReplyTextBox"
+	$externalReplyTextBox.Size = New-Object System.Drawing.Size(200, 224)
+	$externalReplyTextBox.TabIndex = 5
+	$externalReplyTextBox.Add_TextChanged({
+		if ($matchRepliesCheckBox.Checked -eq $true) {$internalReplyTextBox.Text = $externalReplyTextBox.Text}
+	})
+	#
+	# externalReplyLabel
+	#
+	$externalReplyLabel.AutoSize = $true
+	$externalReplyLabel.Location = New-Object System.Drawing.Point(218, 43)
+	$externalReplyLabel.Name = "externalReplyLabel"
+	$externalReplyLabel.Size = New-Object System.Drawing.Size(103, 13)
+	$externalReplyLabel.TabIndex = 4
+	$externalReplyLabel.Text = "External Auto-Reply:"
+	#
+	# matchRepliesCheckBox
+	#
+	$matchRepliesCheckBox.AutoSize = $true
+	$matchRepliesCheckBox.Checked = $true
+	$matchRepliesCheckBox.CheckState = [System.Windows.Forms.CheckState]::Checked
+	$matchRepliesCheckBox.Location = New-Object System.Drawing.Point(11, 292)
+	$matchRepliesCheckBox.Name = "matchRepliesCheckBox"
+	$matchRepliesCheckBox.Size = New-Object System.Drawing.Size(94, 17)
+	$matchRepliesCheckBox.TabIndex = 6
+	$matchRepliesCheckBox.Text = "Match Replies"
+	$matchRepliesCheckBox.UseVisualStyleBackColor = $true
+	#
+	# confirmAutoReplyButton
+	#
+	$confirmAutoReplyButton.Location = New-Object System.Drawing.Point(11, 341)
+	$confirmAutoReplyButton.Name = "confirmAutoReplyButton"
+	$confirmAutoReplyButton.Size = New-Object System.Drawing.Size(410, 28)
+	$confirmAutoReplyButton.TabIndex = 12
+	$confirmAutoReplyButton.Text = "Confirm"
+	$confirmAutoReplyButton.UseVisualStyleBackColor = $true
+	#
+	# startDatePicker
+	#
+	$startDatePicker.Enabled = $false
+	$startDatePicker.Location = New-Object System.Drawing.Point(221, 289)
+	$startDatePicker.Name = "startDatePicker"
+	$startDatePicker.Size = New-Object System.Drawing.Size(200, 20)
+	$startDatePicker.TabIndex = 9
+	#
+	# useScheduleCheckBox
+	#
+	$useScheduleCheckBox.AutoSize = $true
+	$useScheduleCheckBox.Location = New-Object System.Drawing.Point(11, 318)
+	$useScheduleCheckBox.Name = "useScheduleCheckBox"
+	$useScheduleCheckBox.Size = New-Object System.Drawing.Size(139, 17)
+	$useScheduleCheckBox.TabIndex = 7
+	$useScheduleCheckBox.Text = "Use Start and End Date"
+	$useScheduleCheckBox.UseVisualStyleBackColor = $true
+	$useScheduleCheckBox.Add_CheckedChanged({
+		if ($useScheduleCheckBox.Checked -eq $true) {
+			$startDatePicker.Enabled = $true
+			$endDatePicker.Enabled = $true
+		}
+		else {
+			$startDatePicker.Enabled = $false
+			$endDatePicker.Enabled = $false
+		}
+	})
+	#
+	# endDatePicker
+	#
+	$endDatePicker.Enabled = $false
+	$endDatePicker.Location = New-Object System.Drawing.Point(221, 315)
+	$endDatePicker.Name = "endDatePicker"
+	$endDatePicker.Size = New-Object System.Drawing.Size(200, 20)
+	$endDatePicker.TabIndex = 11
+	#
+	# startDateLabel
+	#
+	$startDateLabel.AutoSize = $true
+	$startDateLabel.Location = New-Object System.Drawing.Point(183, 292)
+	$startDateLabel.Name = "startDateLabel"
+	$startDateLabel.Size = New-Object System.Drawing.Size(32, 13)
+	$startDateLabel.TabIndex = 8
+	$startDateLabel.Text = "Start:"
+	#
+	# endDateLabel
+	#
+	$endDateLabel.AutoSize = $true
+	$endDateLabel.Location = New-Object System.Drawing.Point(183, 318)
+	$endDateLabel.Name = "endDateLabel"
+	$endDateLabel.Size = New-Object System.Drawing.Size(29, 13)
+	$endDateLabel.TabIndex = 10
+	$endDateLabel.Text = "End:"
+	#
+	# emailLabel
+	#
+	$emailLabel.AutoSize = $true
+	$emailLabel.Location = New-Object System.Drawing.Point(91, 15)
+	$emailLabel.Name = "emailLabel"
+	$emailLabel.Size = New-Object System.Drawing.Size(46, 13)
+	$emailLabel.TabIndex = 0
+	$emailLabel.Text = "Mailbox:"
+	#
+	# emailInputBox
+	#
+	$emailInputBox.Location = New-Object System.Drawing.Point(143, 12)
+	$emailInputBox.Name = "emailInputBox"
+	$emailInputBox.Size = New-Object System.Drawing.Size(200, 20)
+	$emailInputBox.TabIndex = 1
+	#
+	# addAutoReplyForm
+	#
+	$addAutoReplyForm.ClientSize = New-Object System.Drawing.Size(434, 381)
+	$addAutoReplyForm.Controls.Add($emailInputBox)
+	$addAutoReplyForm.Controls.Add($emailLabel)
+	$addAutoReplyForm.Controls.Add($endDateLabel)
+	$addAutoReplyForm.Controls.Add($startDateLabel)
+	$addAutoReplyForm.Controls.Add($endDatePicker)
+	$addAutoReplyForm.Controls.Add($useScheduleCheckBox)
+	$addAutoReplyForm.Controls.Add($startDatePicker)
+	$addAutoReplyForm.Controls.Add($confirmAutoReplyButton)
+	$addAutoReplyForm.Controls.Add($matchRepliesCheckBox)
+	$addAutoReplyForm.Controls.Add($externalReplyLabel)
+	$addAutoReplyForm.Controls.Add($externalReplyTextBox)
+	$addAutoReplyForm.Controls.Add($internalReplyTextBox)
+	$addAutoReplyForm.Controls.Add($internalReplyLabel)
+	$addAutoReplyForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$addAutoReplyForm.MaximizeBox = $false
+	$addAutoReplyForm.MinimizeBox = $false
+	$addAutoReplyForm.Name = "addAutoReplyForm"
+	$addAutoReplyForm.Text = "Add-AutoReply"
+	$addAutoReplyForm.Add_Shown({$addAutoReplyForm.Activate()})
+
+	$addAutoReplyForm.ShowDialog()
+	$addAutoReplyForm.Dispose()
+
+	Stop-Transcript
+}
 function Add-Contacts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-Contacts.txt"
 	Write-Host "Running Add-Contacts script..."
@@ -4250,6 +4447,7 @@ $scriptList = @(
 	"Add-ADAccounts",
 	"Add-ADAndEmailAccounts",
 	"Add-AuthenticationPhoneMethod",
+	"Add-AutoReply",
 	"Add-Contacts",
 	"Add-DistributionListMember",
 	"Add-EmailAccounts",
@@ -4289,6 +4487,7 @@ function OnRunButtonClick {
         "Add-ADAccounts" { Add-ADAccounts }
         "Add-ADAndEmailAccounts" { Add-ADAndEmailAccounts }
 		"Add-AuthenticationPhoneMethod" { Add-AuthenticationPhoneMethod }
+		"Add-AutoReply" { Add-AutoReply }
 		"Add-Contacts" { Add-Contacts }
 		"Add-DistributionListMember" { Add-DistributionListMember }
 		"Add-EmailAccounts" { Add-EmailAccounts }
