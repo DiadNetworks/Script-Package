@@ -4314,7 +4314,7 @@ function Show-Information {
 	#
 	# logoBox
 	#
-	$logoBox.BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D
+	$logoBox.BorderStyle = [System.Windows.Forms.BorderStyle]::None
 	$logoBox.Image = [System.Drawing.Image]::FromFile(".\Images\logo.png")
 	$logoBox.Location = New-Object System.Drawing.Point(12, 12)
 	$logoBox.Name = "logoBox"
@@ -4332,14 +4332,7 @@ function Show-Information {
 	$openRepoButton.TabIndex = 1
 	$openRepoButton.Text = "Open GitHub Repository"
 	$openRepoButton.Add_Click({ OnOpenRepoButtonClick })
-	$openRepoButton.Add_MouseHover({
-		$openRepoButton.BackColor = "LightBlue"
-		$openRepoButton.UseVisualStyleBackColor = $false
-	})
-	$openRepoButton.Add_MouseLeave({
-		$openRepoButton.BackColor = "Control"
-		$openRepoButton.UseVisualStyleBackColor = $true
-	})
+	$openRepoButton.UseVisualStyleBackColor = $true
 	#
 	# openIssueButton
 	#
@@ -4350,14 +4343,7 @@ function Show-Information {
 	$openIssueButton.TabIndex = 2
 	$openIssueButton.Text = "Report an Issue or Make a Suggestion"
 	$openIssueButton.Add_Click({ OnOpenIssueButtonClick })
-	$openIssueButton.Add_MouseHover({
-		$openIssueButton.BackColor = "LightBlue"
-		$openIssueButton.UseVisualStyleBackColor = $false
-	})
-	$openIssueButton.Add_MouseLeave({
-		$openIssueButton.BackColor = "Control"
-		$openIssueButton.UseVisualStyleBackColor = $true
-	})
+	$openIssueButton.UseVisualStyleBackColor = $true
 	#
 	# viewReleasesButton
 	#
@@ -4369,14 +4355,7 @@ function Show-Information {
 	$viewReleasesButton.TabIndex = 3
 	$viewReleasesButton.Text = "View All Releases"
 	$viewReleasesButton.Add_Click({ OnViewReleasesButtonClick })
-	$viewReleasesButton.Add_MouseHover({
-		$viewReleasesButton.BackColor = "LightBlue"
-		$viewReleasesButton.UseVisualStyleBackColor = $false
-	})
-	$viewReleasesButton.Add_MouseLeave({
-		$viewReleasesButton.BackColor = "Control"
-		$viewReleasesButton.UseVisualStyleBackColor = $true
-	})
+	$viewReleasesButton.UseVisualStyleBackColor = $true
 	#
 	# downloadPortableButton
 	#
@@ -4387,14 +4366,7 @@ function Show-Information {
 	$downloadPortableButton.TabIndex = 4
 	$downloadPortableButton.Text = "Download Portable Version"
 	$downloadPortableButton.Add_Click({ OnDownloadPortableButtonClick })
-	$downloadPortableButton.Add_MouseHover({
-		$downloadPortableButton.BackColor = "LightBlue"
-		$downloadPortableButton.UseVisualStyleBackColor = $false
-	})
-	$downloadPortableButton.Add_MouseLeave({
-		$downloadPortableButton.BackColor = "Control"
-		$downloadPortableButton.UseVisualStyleBackColor = $true
-	})
+	$downloadPortableButton.UseVisualStyleBackColor = $true
 	#
 	# viewReadmeButton
 	#
@@ -4405,14 +4377,7 @@ function Show-Information {
 	$viewReadmeButton.TabIndex = 5
 	$viewReadmeButton.Text = "View README"
 	$viewReadmeButton.Add_Click({ OnViewReadmeButtonClick })
-	$viewReadmeButton.Add_MouseHover({
-		$viewReadmeButton.BackColor = "LightBlue"
-		$viewReadmeButton.UseVisualStyleBackColor = $false
-	})
-	$viewReadmeButton.Add_MouseLeave({
-		$viewReadmeButton.BackColor = "Control"
-		$viewReadmeButton.UseVisualStyleBackColor = $true
-	})
+	$viewReadmeButton.UseVisualStyleBackColor = $true
 	#
 	# infoForm
 	#
