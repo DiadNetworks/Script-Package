@@ -2021,6 +2021,7 @@ function Block-User {
 		$progressBar1.Value = 10
 		if ($adCheckBox.Checked -eq $true) {
 			Import-Module ActiveDirectory
+			$user = $adNameInputBox.Text
 			$progressBar1.Value = 20
 			$samAccountName = $adNameInputBox.Text
 			Disable-ADAccount -Identity $samAccountName
@@ -2053,65 +2054,220 @@ function Block-User {
 			}
 			$progressBar1.Value = 80
 			CheckForErrors
-			function OnAddMemberButtonClick {
-				$addUser = $addMemberBox.Text
-				Add-MailboxPermission -Identity $user -User $addUser -AccessRights FullAccess -InheritanceType All -AutoMapping $true
-				Add-RecipientPermission -Identity $user -Trustee $addUser -AccessRights SendAs -Confirm:$false
-				Write-Host "Added $addUser to $user" -ForegroundColor Cyan
-				$addMemberBox.Text = ""
-				CheckForErrors
-				OperationComplete
+			if ($addMembersCheckBox.Checked -eq $true) {
+				Write-Host "addMembersCheckBox is checked, loading AddMember form..."
+				function OnAddMemberButtonClick {
+					$addUser = $addMemberBox.Text
+					Add-MailboxPermission -Identity $user -User $addUser -AccessRights FullAccess -InheritanceType All -AutoMapping $true
+					Add-RecipientPermission -Identity $user -Trustee $addUser -AccessRights SendAs -Confirm:$false
+					Write-Host "Added $addUser to $user" -ForegroundColor Cyan
+					$addMemberBox.Text = ""
+					CheckForErrors
+					OperationComplete
+				}
+		
+				$AddMemberForm = New-Object System.Windows.Forms.Form
+		
+				$addLabel = New-Object System.Windows.Forms.Label
+				$addMemberBox = New-Object System.Windows.Forms.TextBox
+				$addMemberButton = New-Object System.Windows.Forms.Button
+				#
+				# addLabel
+				#
+				$addLabel.AutoSize = $true
+				$addLabel.Location = New-Object System.Drawing.Point(9, 15)
+				$addLabel.Name = "addLabel"
+				$addLabel.Size = New-Object System.Drawing.Size(37, 13)
+				$addLabel.TabIndex = 0
+				$addLabel.Text = "Member:"
+				#
+				# addMemberBox
+				#
+				$addMemberBox.Location = New-Object System.Drawing.Point(66, 12)
+				$addMemberBox.Name = "addMemberBox"
+				$addMemberBox.Size = New-Object System.Drawing.Size(199, 20)
+				$addMemberBox.TabIndex = 1
+				#
+				# addMemberButton
+				#
+				$addMemberButton.Location = New-Object System.Drawing.Point(12, 39)
+				$addMemberButton.Name = "addMemberButton"
+				$addMemberButton.Size = New-Object System.Drawing.Size(252, 23)
+				$addMemberButton.TabIndex = 2
+				$addMemberButton.Text = "Add"
+				$addMemberButton.UseVisualStyleBackColor = $true
+				$addMemberButton.Add_Click({OnAddMemberButtonClick})
+				#
+				# AddMemberForm
+				#
+				$AddMemberForm.AcceptButton = $addMemberButton
+				$AddMemberForm.ClientSize = New-Object System.Drawing.Size(273, 74)
+				$AddMemberForm.Controls.Add($addMemberButton)
+				$AddMemberForm.Controls.Add($addMemberBox)
+				$AddMemberForm.Controls.Add($addLabel)
+				$AddMemberForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+				$AddMemberForm.MaximizeBox = $false
+				$AddMemberForm.MinimizeBox = $false
+				$AddMemberForm.Name = "AddMemberForm"
+				$AddMemberForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+				$AddMemberForm.Text = "Add members to the blocked mailbox."
+				Write-Host "Loaded AddMemberForm."
+				$AddMemberForm.Add_Shown({$AddMemberForm.Activate()})
+				$AddMemberForm.ShowDialog()
+				$AddMemberForm.Dispose()
 			}
-	
-			$AddMemberForm = New-Object System.Windows.Forms.Form
-	
-			$addLabel = New-Object System.Windows.Forms.Label
-			$addMemberBox = New-Object System.Windows.Forms.TextBox
-			$addMemberButton = New-Object System.Windows.Forms.Button
-			#
-			# addLabel
-			#
-			$addLabel.AutoSize = $true
-			$addLabel.Location = New-Object System.Drawing.Point(9, 15)
-			$addLabel.Name = "addLabel"
-			$addLabel.Size = New-Object System.Drawing.Size(37, 13)
-			$addLabel.TabIndex = 0
-			$addLabel.Text = "Member:"
-			#
-			# addMemberBox
-			#
-			$addMemberBox.Location = New-Object System.Drawing.Point(66, 12)
-			$addMemberBox.Name = "addMemberBox"
-			$addMemberBox.Size = New-Object System.Drawing.Size(199, 20)
-			$addMemberBox.TabIndex = 1
-			#
-			# addMemberButton
-			#
-			$addMemberButton.Location = New-Object System.Drawing.Point(12, 39)
-			$addMemberButton.Name = "addMemberButton"
-			$addMemberButton.Size = New-Object System.Drawing.Size(252, 23)
-			$addMemberButton.TabIndex = 2
-			$addMemberButton.Text = "Add"
-			$addMemberButton.UseVisualStyleBackColor = $true
-			$addMemberButton.Add_Click({OnAddMemberButtonClick})
-			#
-			# AddMemberForm
-			#
-			$AddMemberForm.AcceptButton = $addMemberButton
-			$AddMemberForm.ClientSize = New-Object System.Drawing.Size(273, 74)
-			$AddMemberForm.Controls.Add($addMemberButton)
-			$AddMemberForm.Controls.Add($addMemberBox)
-			$AddMemberForm.Controls.Add($addLabel)
-			$AddMemberForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-			$AddMemberForm.MaximizeBox = $false
-			$AddMemberForm.MinimizeBox = $false
-			$AddMemberForm.Name = "AddMemberForm"
-			$AddMemberForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-			$AddMemberForm.Text = "Add members to the blocked mailbox."
-			Write-Host "Loaded AddMemberForm."
-			$AddMemberForm.Add_Shown({$AddMemberForm.Activate()})
-			$AddMemberForm.ShowDialog()
-			$AddMemberForm.Dispose()
+			if ($addAutoReplyCheckBox.Checked -eq $true) {
+				Write-Host "addAutoReplyCheckBox is checked, loading AddAutoReply form..."
+
+				function OnConfirmAutoReplyButtonClick {
+					Write-Host "ConfirmAutoReplyButton clicked, adding auto-replies..."
+					$internalMessage = $internalReplyTextBox.Text
+					$externalMessage = $externalReplyTextBox.Text
+
+					if ($useScheduleCheckBox.Checked -eq $true) {
+						Write-Host "Use schedule is checked, creating auto-reply with schedule..."
+						$startTime = $startDatePicker.Value
+						$endTime = $endDatePicker.Value
+						Set-MailboxAutoReplyConfiguration -Identity $user -AutoReplyState Scheduled -StartTime $startTime -EndTime $endTime -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
+					}
+					else {
+						Write-Host "Use schedule isn't checked, creating auto-reply..."
+						Set-MailboxAutoReplyConfiguration -Identity $user -AutoReplyState Enabled -InternalMessage $internalMessage -ExternalMessage $externalMessage -ExternalAudience All -Confirm:$false
+					}
+				}
+
+				$addAutoReplyForm = New-Object System.Windows.Forms.Form
+
+				$internalReplyLabel = New-Object System.Windows.Forms.Label
+				$internalReplyTextBox = New-Object System.Windows.Forms.TextBox
+				$externalReplyTextBox = New-Object System.Windows.Forms.TextBox
+				$externalReplyLabel = New-Object System.Windows.Forms.Label
+				$matchRepliesCheckBox = New-Object System.Windows.Forms.CheckBox
+				$confirmAutoReplyButton = New-Object System.Windows.Forms.Button
+				$startDatePicker = New-Object System.Windows.Forms.DateTimePicker
+				$useScheduleCheckBox = New-Object System.Windows.Forms.CheckBox
+				$endDatePicker = New-Object System.Windows.Forms.DateTimePicker
+				#
+				# internalReplyLabel
+				#
+				$internalReplyLabel.AutoSize = $true
+				$internalReplyLabel.Location = New-Object System.Drawing.Point(9, 9)
+				$internalReplyLabel.Name = "internalReplyLabel"
+				$internalReplyLabel.Size = New-Object System.Drawing.Size(100, 13)
+				$internalReplyLabel.TabIndex = 0
+				$internalReplyLabel.Text = "Internal Auto-Reply:"
+				#
+				# internalReplyTextBox
+				#
+				$internalReplyTextBox.Location = New-Object System.Drawing.Point(12, 25)
+				$internalReplyTextBox.Multiline = $true
+				$internalReplyTextBox.Name = "internalReplyTextBox"
+				$internalReplyTextBox.Size = New-Object System.Drawing.Size(175, 224)
+				$internalReplyTextBox.TabIndex = 1
+				$internalReplyTextBox.Add_TextChanged({
+					if ($matchRepliesCheckBox.Checked -eq $true) {$externalReplyTextBox.Text = $internalReplyTextBox.Text}
+				})
+				#
+				# externalReplyTextBox
+				#
+				$externalReplyTextBox.Location = New-Object System.Drawing.Point(197, 25)
+				$externalReplyTextBox.Multiline = $true
+				$externalReplyTextBox.Name = "externalReplyTextBox"
+				$externalReplyTextBox.Size = New-Object System.Drawing.Size(175, 224)
+				$externalReplyTextBox.TabIndex = 3
+				$externalReplyTextBox.Add_TextChanged({
+					if ($matchRepliesCheckBox.Checked -eq $true) {$internalReplyTextBox.Text = $externalReplyTextBox.Text}
+				})
+				#
+				# externalReplyLabel
+				#
+				$externalReplyLabel.AutoSize = $true
+				$externalReplyLabel.Location = New-Object System.Drawing.Point(194, 9)
+				$externalReplyLabel.Name = "externalReplyLabel"
+				$externalReplyLabel.Size = New-Object System.Drawing.Size(103, 13)
+				$externalReplyLabel.TabIndex = 2
+				$externalReplyLabel.Text = "External Auto-Reply:"
+				#
+				# matchRepliesCheckBox
+				#
+				$matchRepliesCheckBox.AutoSize = $true
+				$matchRepliesCheckBox.Checked = $true
+				$matchRepliesCheckBox.CheckState = [System.Windows.Forms.CheckState]::Checked
+				$matchRepliesCheckBox.Location = New-Object System.Drawing.Point(12, 258)
+				$matchRepliesCheckBox.Name = "matchRepliesCheckBox"
+				$matchRepliesCheckBox.Size = New-Object System.Drawing.Size(94, 17)
+				$matchRepliesCheckBox.TabIndex = 4
+				$matchRepliesCheckBox.Text = "Match Replies"
+				$matchRepliesCheckBox.UseVisualStyleBackColor = $true
+				#
+				# confirmAutoReplyButton
+				#
+				$confirmAutoReplyButton.Location = New-Object System.Drawing.Point(12, 307)
+				$confirmAutoReplyButton.Name = "confirmAutoReplyButton"
+				$confirmAutoReplyButton.Size = New-Object System.Drawing.Size(360, 26)
+				$confirmAutoReplyButton.TabIndex = 8
+				$confirmAutoReplyButton.Text = "Confirm"
+				$confirmAutoReplyButton.UseVisualStyleBackColor = $true
+				$confirmAutoReplyButton.Add_Click({OnConfirmAutoReplyButtonClick})
+				#
+				# startDatePicker
+				#
+				$startDatePicker.Enabled = $false
+				$startDatePicker.Location = New-Object System.Drawing.Point(172, 255)
+				$startDatePicker.Name = "startDatePicker"
+				$startDatePicker.Size = New-Object System.Drawing.Size(200, 20)
+				$startDatePicker.TabIndex = 6
+				#
+				# useScheduleCheckBox
+				#
+				$useScheduleCheckBox.AutoSize = $true
+				$useScheduleCheckBox.Location = New-Object System.Drawing.Point(12, 284)
+				$useScheduleCheckBox.Name = "useScheduleCheckBox"
+				$useScheduleCheckBox.Size = New-Object System.Drawing.Size(139, 17)
+				$useScheduleCheckBox.TabIndex = 5
+				$useScheduleCheckBox.Text = "Use Start and End Date"
+				$useScheduleCheckBox.UseVisualStyleBackColor = $true
+				$useScheduleCheckBox.Add_CheckedChanged({
+					if ($useScheduleCheckBox.Checked -eq $true) {
+						$startDatePicker.Enabled = $true
+						$endDatePicker.Enabled = $true
+					}
+					else {
+						$startDatePicker.Enabled = $false
+						$endDatePicker.Enabled = $false
+					}
+				})
+				#
+				# endDatePicker
+				#
+				$endDatePicker.Enabled = $false
+				$endDatePicker.Location = New-Object System.Drawing.Point(172, 281)
+				$endDatePicker.Name = "endDatePicker"
+				$endDatePicker.Size = New-Object System.Drawing.Size(200, 20)
+				$endDatePicker.TabIndex = 7
+				#
+				# addAutoReplyForm
+				#
+				$addAutoReplyForm.ClientSize = New-Object System.Drawing.Size(384, 345)
+				$addAutoReplyForm.Controls.Add($endDatePicker)
+				$addAutoReplyForm.Controls.Add($useScheduleCheckBox)
+				$addAutoReplyForm.Controls.Add($startDatePicker)
+				$addAutoReplyForm.Controls.Add($confirmAutoReplyButton)
+				$addAutoReplyForm.Controls.Add($matchRepliesCheckBox)
+				$addAutoReplyForm.Controls.Add($externalReplyLabel)
+				$addAutoReplyForm.Controls.Add($externalReplyTextBox)
+				$addAutoReplyForm.Controls.Add($internalReplyTextBox)
+				$addAutoReplyForm.Controls.Add($internalReplyLabel)
+				$addAutoReplyForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+				$addAutoReplyForm.MaximizeBox = $false
+				$addAutoReplyForm.MinimizeBox = $false
+				$addAutoReplyForm.Name = "addAutoReplyForm"
+				$addAutoReplyForm.Text = "Add Auto-Reply"
+				$addAutoReplyForm.Add_Shown({$addAutoReplyForm.Activate()})
+
+				$addAutoReplyForm.ShowDialog()
+				$addAutoReplyForm.Dispose()
+			}
 		}
 		$emailInputBox.Text = ""
 		$adNameInputBox.Text = ""
@@ -2129,6 +2285,9 @@ function Block-User {
 	$adNameInputBox = New-Object System.Windows.Forms.TextBox
 	$emailCheckBox = New-Object System.Windows.Forms.CheckBox
 	$adCheckBox = New-Object System.Windows.Forms.CheckBox
+	$emailOptionsGroupBox = New-Object System.Windows.Forms.GroupBox
+	$addMembersCheckBox = New-Object System.Windows.Forms.CheckBox
+	$addAutoReplyCheckBox = New-Object System.Windows.Forms.CheckBox
 	#
 	# emailLabel
 	#
@@ -2153,10 +2312,10 @@ function Block-User {
 	#
 	# blockButton
 	#
-	$blockButton.Location = New-Object System.Drawing.Point(12, 116)
+	$blockButton.Location = New-Object System.Drawing.Point(12, 136)
 	$blockButton.Name = "blockButton"
 	$blockButton.Size = New-Object System.Drawing.Size(260, 23)
-	$blockButton.TabIndex = 6
+	$blockButton.TabIndex = 9
 	$blockButton.Text = "Block"
 	$blockButton.UseVisualStyleBackColor = $true
 	$blockButton.Add_Click({OnBlockButtonClick})
@@ -2184,15 +2343,21 @@ function Block-User {
 	$emailCheckBox.CheckState = [System.Windows.Forms.CheckState]::Checked
 	$emailCheckBox.Location = New-Object System.Drawing.Point(12, 68)
 	$emailCheckBox.Name = "emailCheckBox"
-	$emailCheckBox.Size = New-Object System.Drawing.Size(80, 17)
+	$emailCheckBox.Size = New-Object System.Drawing.Size(81, 17)
 	$emailCheckBox.TabIndex = 4
-	$emailCheckBox.Text = "Block email"
+	$emailCheckBox.Text = "Block Email"
 	$emailCheckBox.UseVisualStyleBackColor = $true
 	$emailCheckBox.Add_CheckedChanged({
 		if ($emailCheckBox.Checked -eq $true) {
 			$emailInputBox.Enabled = $true
+			$emailOptionsGroupBox.Enabled = $true
+			$addMembersCheckBox.Enabled = $true
+			$addAutoReplyCheckBox.Enabled = $true
 		} elseif ($emailCheckBox.Checked -eq $false) {
 			$emailInputBox.Enabled = $false
+			$emailOptionsGroupBox.Enabled = $false
+			$addMembersCheckBox.Enabled = $false
+			$addAutoReplyCheckBox.Enabled = $false
 		}
 	})
 	#
@@ -2215,9 +2380,43 @@ function Block-User {
 		}
 	})
 	#
+	# emailOptionsGroupBox
+	#
+	$emailOptionsGroupBox.Controls.Add($addAutoReplyCheckBox)
+	$emailOptionsGroupBox.Controls.Add($addMembersCheckBox)
+	$emailOptionsGroupBox.Location = New-Object System.Drawing.Point(94, 65)
+	$emailOptionsGroupBox.Name = "emailOptionsGroupBox"
+	$emailOptionsGroupBox.Size = New-Object System.Drawing.Size(178, 65)
+	$emailOptionsGroupBox.TabIndex = 6
+	$emailOptionsGroupBox.TabStop = $false
+	$emailOptionsGroupBox.Text = "EmailOptions"
+	#
+	# addMembersCheckBox
+	#
+	$addMembersCheckBox.AutoSize = $true
+	$addMembersCheckBox.Checked = $true
+	$addMembersCheckBox.CheckState = [System.Windows.Forms.CheckState]::Checked
+	$addMembersCheckBox.Location = New-Object System.Drawing.Point(6, 19)
+	$addMembersCheckBox.Name = "addMembersCheckBox"
+	$addMembersCheckBox.Size = New-Object System.Drawing.Size(91, 17)
+	$addMembersCheckBox.TabIndex = 7
+	$addMembersCheckBox.Text = "Add Members"
+	$addMembersCheckBox.UseVisualStyleBackColor = $true
+	#
+	# addAutoReplyCheckBox
+	#
+	$addAutoReplyCheckBox.AutoSize = $true
+	$addAutoReplyCheckBox.Location = New-Object System.Drawing.Point(6, 42)
+	$addAutoReplyCheckBox.Name = "addAutoReplyCheckBox"
+	$addAutoReplyCheckBox.Size = New-Object System.Drawing.Size(100, 17)
+	$addAutoReplyCheckBox.TabIndex = 8
+	$addAutoReplyCheckBox.Text = "Add Auto-Reply"
+	$addAutoReplyCheckBox.UseVisualStyleBackColor = $true
+	#
 	# ScriptForm2
 	#
-	$ScriptForm2.ClientSize = New-Object System.Drawing.Size(284, 151)
+	$ScriptForm2.ClientSize = New-Object System.Drawing.Size(284, 171)
+	$ScriptForm2.Controls.Add($emailOptionsGroupBox)
 	$ScriptForm2.Controls.Add($adCheckBox)
 	$ScriptForm2.Controls.Add($emailCheckBox)
 	$ScriptForm2.Controls.Add($adNameInputBox)
@@ -2519,8 +2718,8 @@ function Enable-Archive {
 	}
 	
 	function OnExpandButtonClick {
-		ShowWarningForm "Turning on AutoExpandingArchive is irreversible - are you sure you'd like to continue?"
-		if ($userClickedConfirm -eq $true) {
+		$getUserConfirmation = ShowWarningForm "Turning on AutoExpandingArchive is irreversible - are you sure you'd like to continue?"
+		if ($getUserConfirmation -eq $true) {
 			Write-Host "User confirmed operation."
 			$mailbox = $archiveInputBox.Text
 			$progressBar1.Value = 20
@@ -2529,12 +2728,11 @@ function Enable-Archive {
 			$progressBar1.Value = 80
 			CheckForErrors
 			OperationComplete
-		} elseif ($userClickedConfirm -eq $false) {
+		} elseif ($getUserConfirmation -eq $false) {
 			Write-Host "User cancelled operation."
 		} else {
 			Write-Host "Error, can't determine if user confirmed or cancelled."
 		}
-		$Script:userClickedConfirm = $false
 	}
 	
 	$ScriptForm3 = New-Object System.Windows.Forms.Form
@@ -4340,75 +4538,6 @@ $operationCompleteForm.Name = "operationCompleteForm"
 $operationCompleteForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
 $operationCompleteForm.Text = "Operation Complete"
 $operationCompleteForm.Add_Shown({$operationCompleteForm.Activate()})
-#
-# Warning form
-#
-$userClickedConfirm = $false
-$warningForm = New-Object System.Windows.Forms.Form
-
-$confirmWarningButton = New-Object System.Windows.Forms.Button
-$confirmWarningCheckBox = New-Object System.Windows.Forms.CheckBox
-$warningTextLabel = New-Object System.Windows.Forms.Label
-#
-# confirmWarningButton
-#
-$confirmWarningButton.Enabled = $false
-$confirmWarningButton.Location = New-Object System.Drawing.Point(12, 126)
-$confirmWarningButton.Name = "confirmWarningButton"
-$confirmWarningButton.Size = New-Object System.Drawing.Size(360, 23)
-$confirmWarningButton.TabIndex = 2
-$confirmWarningButton.Text = "Confirm"
-$confirmWarningButton.UseVisualStyleBackColor = $true
-$confirmWarningButton.Add_Click({
-	$Script:userClickedConfirm = $true
-	$warningForm.Close()
-})
-#
-# confirmWarningCheckBox
-#
-$confirmWarningCheckBox.AutoSize = $true
-$confirmWarningCheckBox.Location = New-Object System.Drawing.Point(12, 103)
-$confirmWarningCheckBox.Name = "confirmWarningCheckBox"
-$confirmWarningCheckBox.Size = New-Object System.Drawing.Size(129, 17)
-$confirmWarningCheckBox.TabIndex = 1
-$confirmWarningCheckBox.Text = "I know what I'm doing"
-$confirmWarningCheckBox.UseVisualStyleBackColor = $true
-$confirmWarningCheckBox.Add_CheckedChanged({
-	if ($confirmWarningCheckBox.Checked) {
-        Write-Host "confirmWarningCheckBox is checked."
-        $confirmWarningButton.Enabled = $true
-    } else {
-        Write-Host "confirmWarningCheckBox is unchecked."
-        $confirmWarningButton.Enabled = $false
-    }
-})
-#
-# warningTextLabel
-#
-$warningTextLabel.AutoSize = $true
-$warningTextLabel.Location = New-Object System.Drawing.Point(12, 9)
-$warningTextLabel.MaximumSize = New-Object System.Drawing.Size(360, 0)
-$warningTextLabel.Name = "warningTextLabel"
-$warningTextLabel.Size = New-Object System.Drawing.Size(71, 13)
-$warningTextLabel.TabIndex = 0
-$warningTextLabel.Text = ""
-#
-# warningForm
-#
-$warningForm.ClientSize = New-Object System.Drawing.Size(384, 161)
-$warningForm.Controls.Add($warningTextLabel)
-$warningForm.Controls.Add($confirmWarningCheckBox)
-$warningForm.Controls.Add($confirmWarningButton)
-$warningForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-$warningForm.MaximizeBox = $false
-$warningForm.MinimizeBox = $false
-$warningForm.Name = "warningForm"
-$warningForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-$warningForm.Text = "Warning!"
-$warningForm.Add_Shown({$warningForm.Activate()})
-$warningForm.Add_FormClosing({
-	$confirmWarningCheckBox.Checked = $false
-})
 
 # Function to show operation complete form
 function OperationComplete {
@@ -4422,8 +4551,83 @@ function ShowWarningForm {
 		[Parameter(Mandatory=$true)]
 		[string]$warningText
 	)
+	Write-Host "Showing warning form..."
+	$userClickedConfirm = New-Object PSObject -Property @{ Value = $false }
+	Write-Host "userClickedConfirm is $($userClickedConfirm.Value)"
+	#
+	# Warning form
+	#
+	$warningForm = New-Object System.Windows.Forms.Form
+
+	$confirmWarningButton = New-Object System.Windows.Forms.Button
+	$confirmWarningCheckBox = New-Object System.Windows.Forms.CheckBox
+	$warningTextLabel = New-Object System.Windows.Forms.Label
+	#
+	# confirmWarningButton
+	#
+	$confirmWarningButton.Enabled = $false
+	$confirmWarningButton.Location = New-Object System.Drawing.Point(12, 126)
+	$confirmWarningButton.Name = "confirmWarningButton"
+	$confirmWarningButton.Size = New-Object System.Drawing.Size(360, 23)
+	$confirmWarningButton.TabIndex = 2
+	$confirmWarningButton.Text = "Confirm"
+	$confirmWarningButton.UseVisualStyleBackColor = $true
+	$confirmWarningButton.Add_Click({
+		Write-Host "User clicked confirm."
+		$userClickedConfirm.Value = $true
+		Write-Host "userClickedConfirm is $($userClickedConfirm.Value)"
+		$warningForm.Close()
+	})
+	#
+	# confirmWarningCheckBox
+	#
+	$confirmWarningCheckBox.AutoSize = $true
+	$confirmWarningCheckBox.Location = New-Object System.Drawing.Point(12, 103)
+	$confirmWarningCheckBox.Name = "confirmWarningCheckBox"
+	$confirmWarningCheckBox.Size = New-Object System.Drawing.Size(129, 17)
+	$confirmWarningCheckBox.TabIndex = 1
+	$confirmWarningCheckBox.Text = "I know what I'm doing"
+	$confirmWarningCheckBox.UseVisualStyleBackColor = $true
+	$confirmWarningCheckBox.Add_CheckedChanged({
+		if ($confirmWarningCheckBox.Checked) {
+			Write-Host "confirmWarningCheckBox is checked."
+			$confirmWarningButton.Enabled = $true
+		} else {
+			Write-Host "confirmWarningCheckBox is unchecked."
+			$confirmWarningButton.Enabled = $false
+		}
+	})
+	#
+	# warningTextLabel
+	#
+	$warningTextLabel.AutoSize = $true
+	$warningTextLabel.Location = New-Object System.Drawing.Point(12, 9)
+	$warningTextLabel.MaximumSize = New-Object System.Drawing.Size(360, 0)
+	$warningTextLabel.Name = "warningTextLabel"
+	$warningTextLabel.Size = New-Object System.Drawing.Size(71, 13)
+	$warningTextLabel.TabIndex = 0
+	$warningTextLabel.Text = "Warning!"
 	$warningTextLabel.Text = $warningText
+	#
+	# warningForm
+	#
+	$warningForm.ClientSize = New-Object System.Drawing.Size(384, 161)
+	$warningForm.Controls.Add($warningTextLabel)
+	$warningForm.Controls.Add($confirmWarningCheckBox)
+	$warningForm.Controls.Add($confirmWarningButton)
+	$warningForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$warningForm.MaximizeBox = $false
+	$warningForm.MinimizeBox = $false
+	$warningForm.Name = "warningForm"
+	$warningForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$warningForm.Text = "Warning!"
+	$warningForm.Add_Shown({$warningForm.Activate()})
+	$warningForm.Add_FormClosing({
+		$confirmWarningCheckBox.Checked = $false
+	})
 	$warningForm.ShowDialog()
+	Write-Host "Returning result... $($userClickedConfirm.Value)"
+	return $userClickedConfirm.Value
 }
 
 # Load settings from settings.ini
