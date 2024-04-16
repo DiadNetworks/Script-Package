@@ -59,6 +59,12 @@ function ChangeFormColor {
 	  }
 	}
 }
+function UpdateProgress {
+	param (
+		$progressBarValue
+	)
+	$progressBar1.Value = $progressBarValue
+}
 
 # Functions for each script. Might move these into separate ps1 files at some point.
 function Add-ADAccounts {
