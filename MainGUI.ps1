@@ -40,6 +40,26 @@ function LoadSettings {
 
 	Write-Host "Loaded settings."
 }
+# Color mode function - not used currently
+function ChangeFormColor {
+	param (
+		$color
+	)
+	# Change the color of the console text (foreground color)
+	$Host.UI.RawUI.ForegroundColor = $color
+
+	# Iterate over all form elements and set their foreground color
+	foreach ($element in $Host.UI.RawUI.Window.Forms) {
+	  if ($element.GetType().Name -eq 'TextBox') {
+		$element.ForegroundColor = $color
+	  } elseif ($element.GetType().Name -eq 'Button') {
+		$element.ForegroundColor = $color
+	  } elseif ($element.GetType().Name -eq 'ListBox') {
+		$element.ForegroundColor = $color
+	  }
+	}
+}
+
 # Functions for each script. Might move these into separate ps1 files at some point.
 function Add-ADAccounts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADAccounts.txt"
