@@ -9,21 +9,34 @@ $version = "v2.12.0"
 function LoadSettings {
 	Write-Host "Loading settings from settings.ini..."
 	Get-Content “.\settings.ini” | foreach-object -begin {$h=@{}} -process { $k = [regex]::split($_,’=’); if(($k[0].CompareTo(“”) -ne 0)     -and ($k[0].StartsWith(“[“) -ne $True)) { $h.Add($k[0], $k[1]) } }
+	$progressBarColor = $h.Get_Item("ProgressBarColor")
 	$progressBarType = $h.Get_Item(“ProgressBarType”)
 	$enableVisualStyles = $h.Get_Item(“EnableVisualStyles”)
 
-	# Set progress bar style
-	if ($progressBarType -eq 0) {
-		$progressBar1.Style = "Blocks"
-		Write-Host "Set progress bar type to Blocks."
+	# Set progress bar color
+	if ($progressBarColor -eq "Default") {
+		Write-Host "Using default progress bar color."
 	}
-	elseif ($progressBarType -eq 1) {
+	else {
+		$progressBar1.ForeColor = [System.Drawing.Color]::$progressBarColor
+		Write-Host "Set custom progress bar color: $progressBarColor. Note, custom colors only work if EnableVisualStyles is set to 0."
+	}
+	# Set progress bar style
+	if ($progressBarType -eq "Continuous") {
 		$progressBar1.Style = "Continuous"
 		Write-Host "Set progress bar type to Continuous."
 	}
+	elseif ($progressBarType -eq "Blocks") {
+		$progressBar1.Style = "Blocks"
+		Write-Host "Set progress bar type to Blocks. Note, block style only works if EnableVisualStyles is set to 0."
+	}
+	elseif ($progressBarType -eq "Marquee") {
+		$progressBar1.Style = "Marquee"
+		Write-Host "Set progress bar style to Marquee. Note, the application is not setup to use this style, progress bar won't work properly."
+	}
 	else {
 		Write-Host "Invalid value, using default progress bar type."
-		$progressBar1.Style = "Blocks"
+		$progressBar1.Style = "Continuous"
 	}
 	# Set visual styles
 	if ($enableVisualStyles -eq 0) {
@@ -59,7 +72,7 @@ function ChangeFormColor {
 	  }
 	}
 }
-function UpdateProgress {
+function UpdateProgressBar {
 	param (
 		$progressBarValue
 	)
@@ -854,25 +867,25 @@ function Add-AutoReply {
 function Add-Contacts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-Contacts.txt"
 	Write-Host "Running Add-Contacts script..."
-	$progressBar1.Value = 10
-	$Script:addContactsMode = 0
+	UpdateProgressBar(10)
+	$addContactsMode = New-Object PSObject -Property @{ Value = 0 }
 	function OnAddContactButtonClick {
 		Write-Host "AddContact button clicked."
-		$progressBar1.Value = 10
-		if ($addContactsMode -eq 0) {
+		UpdateProgressBar(10)
+		if ($addContactsMode.Value -eq 0) {
 			$displayName = $nameInputBox.Text
 			$splitName = $displayName -Split ' '
 			$firstName = $splitName[0]
 			$lastName = $splitName[1]
 			$externalEmailAddress = $emailInputBox.Text
-			$progressBar1.Value = 50
+			UpdateProgressBar(50)
 			New-MailContact -Name $displayName -DisplayName $displayName -ExternalEmailAddress $externalEmailAddress -FirstName $firstName -LastName $lastName
-			$progressBar1.Value = 90
-		} elseif ($addContactsMode -eq 1) {
+			UpdateProgressBar(90)
+		} elseif ($addContactsMode.Value -eq 1) {
 			$externalEmailAddress = $emailInputBox.Text
-			$progressBar1.Value = 50
+			UpdateProgressBar(50)
 			New-MailContact -Name $externalEmailAddress -ExternalEmailAddress $externalEmailAddress
-			$progressBar1.Value = 90
+			UpdateProgressBar(90)
 		}
 		CheckForErrors
 		OperationComplete
@@ -880,22 +893,22 @@ function Add-Contacts {
 	function OnBulkContactsButtonClick {
 		Write-Host "AddContactsBulk button clicked."
 		$progressBar1.Value = 5
-		if ($addContactsMode -eq 0) {
+		if ($addContactsMode.Value -eq 0) {
 			Import-Csv ".\Templates\Add-Contacts.csv" | ForEach-Object {
 				$displayName = $_.DisplayName
 				$splitName = $displayName -Split ' '
 				$firstName = $splitName[0]
 				$lastName = $splitName[1]
 				$externalEmailAddress = $_.EmailAddress
-				$progressBar1.Value = 40
+				UpdateProgressBar(40)
 				New-MailContact -Name $displayName -DisplayName $displayName -ExternalEmailAddress $externalEmailAddress -FirstName $firstName -LastName $lastName
-				$progressBar1.Value = 70
+				UpdateProgressBar(70)
 			}
-		} elseif ($addContactsMode -eq 1) {
+		} elseif ($addContactsMode.Value -eq 1) {
 			Get-Content ".\Templates\Add-Contacts.txt" | ForEach-Object {
-				$progressBar1.Value = 10
+				UpdateProgressBar(10)
 				New-MailContact -Name $_ -ExternalEmailAddress $_
-				$progressBar1.Value = 70
+				UpdateProgressBar(70)
 			}
 		}
 		CheckForErrors
@@ -903,25 +916,25 @@ function Add-Contacts {
 	}
 	function OnOpenTemplateButtonClick {
 		Write-Host "OpenTemplate button clicked."
-		$progressBar1.Value = 10
-		if ($addContactsMode -eq 0) {
+		UpdateProgressBar(10)
+		if ($addContactsMode.Value -eq 0) {
 			Invoke-Item ".\Templates\Add-Contacts.csv"
-		} elseif ($addContactsMode -eq 1) {
+		} elseif ($addContactsMode.Value -eq 1) {
 			Invoke-Item ".\Templates\Add-Contacts.txt"
 		}
-		$progressBar1.Value = 80
+		UpdateProgressBar(80)
 		CheckForErrors
-		$progressBar1.Value = 0
+		UpdateProgressBar(0)
 	}
 	function OnRadioButtonSelect {
 		if ($allInfoRadioButton.Checked -eq $true) {
-			$Script:addContactsMode = 0
+			$addContactsMode.Value = 0
 			$nameInputBox.Enabled = $true
 		} elseif ($justEmailRadioButton.Checked -eq $true) {
-			$Script:addContactsMode = 1
+			$addContactsMode.Value = 1
 			$nameInputBox.Enabled = $false
 		}
-		Write-Host "Mode = $addContactsMode"
+		Write-Host "Mode = $($addContactsMode.Value)"
 		CheckForErrors
 	}
 	$scriptForm10 = New-Object System.Windows.Forms.Form
@@ -1076,7 +1089,7 @@ function Add-Contacts {
 	$scriptForm10.Add_Shown({$scriptForm10.Activate()})
 
 	Write-Host "Loaded ScriptForm10."
-	$progressBar1.Value = 0
+	UpdateProgressBar(0)
 
 	$scriptForm10.ShowDialog()
 	$scriptForm10.Dispose()
@@ -4594,7 +4607,7 @@ $progressBar1.Location = New-Object System.Drawing.Point(12, 97)
 $progressBar1.Name = "progressBar1"
 $progressBar1.Size = New-Object System.Drawing.Size(275, 23)
 $progressBar1.TabIndex = 2
-$progressBar1.Style = "Blocks"
+$progressBar1.Style = "Continuous"
 #
 # signInButton
 #
