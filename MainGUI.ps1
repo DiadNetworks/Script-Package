@@ -2709,7 +2709,7 @@ function Clear-RecycleBin {
 	$clearBinsButton.UseVisualStyleBackColor = $true
 	$clearBinsButton.Add_Click({
 		$progressBar1.Value = 30
-		Remove-Item -Path "C:\`$Recycle.Bin" -Recurse -Force
+		Remove-Item -Path "C:\`$Recycle.Bin\*" -Recurse -Force
 		$progressBar1.Value = 90
 		CheckForErrors
 		OperationComplete
