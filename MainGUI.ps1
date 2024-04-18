@@ -4841,8 +4841,8 @@ function ShowWarningForm {
 	return $userClickedConfirm.Value
 }
 
-# Load settings from settings.ini
-LoadSettings
+# Load settings from settings.ini - currently disabled
+#LoadSettings
 
 Write-Host "Loaded MainGUI."
 CheckForErrors
