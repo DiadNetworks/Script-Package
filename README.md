@@ -8,8 +8,8 @@
 For the portable version, run `Script-Package.bat` as administrator.
 
 **Modules:** Microsoft.Graph, ExchangeOnlineManagement  
-Install-Module -Name Microsoft.Graph -Force -AllowClobber  
-Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber  
+- Install-Module -Name Microsoft.Graph -Force -AllowClobber  
+- Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber  
   
 There is an option in the dropdown called `Install-RequiredModules`, if you run this then the two commands shown above will be run.
 
