@@ -2279,6 +2279,8 @@ function Block-User {
 			Reset-MgUserAuthenticationMethodPassword -UserId $user -AuthenticationMethodId $passwordMethod.Id
 			Write-Host "Reset password for $user" -ForegroundColor Cyan
 			$progressBar1.Value = 50
+			Revoke-MgUserSignInSession -UserId $user
+			Write-Host "Revoked $user's sessions."
 			Update-MgUser -UserId $user -AccountEnabled:$false
 			Write-Host "Disabled $user account" -ForegroundColor Cyan -NoNewline
 			$progressBar1.Value = 60
@@ -3681,6 +3683,12 @@ function Remove-UnifiedGroupMember {
 	$scriptForm8.Dispose()
 
 	Stop-Transcript
+}
+function Revoke-AllSignInSessions {
+	$userIds = Get-MgUser -All | Select-Object ID
+	foreach($userId in $userIds) {
+		Revoke-MgUserSignInSession -UserId $userId.Id
+	}
 }
 function Update-ScriptPackage {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Update-ScriptPackage.txt"
