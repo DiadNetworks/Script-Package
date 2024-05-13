@@ -34,19 +34,6 @@ What it looks like:
 
 ## Scripts
 
-### Add-ADUsers
-
-*Requires run on server with Active Directory.*  
-Add Active Directory users in bulk.  
-The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.
-
-### Add-ADUsersAndEmail
-
-*Requires sign in. Requires run on server with Active Directory.*  
-The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.  
-The email domain to use for the new email accounts must be entered or the email accounts won't be created.  
-You can choose either Business Basic or Business Standard for the email license. Make sure to purchase enough licenses before running the script or none will be assigned.
-
 ### Add-Contacts
 
 *Requires sign in.*  
@@ -115,6 +102,19 @@ Turn on archiving, jumpstart archiving or turn on auto-expanding archive for a m
 Installs required modules for the script package to work.  
 Install-Module -Name Microsoft.Graph -Force -AllowClobber  
 Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber
+
+### New-ADAccounts
+
+*Requires run on server with Active Directory.*  
+Add Active Directory accounts in bulk.  
+The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.
+
+### New-ADAndEmailAccounts
+
+*Requires sign in. Requires run on server with Active Directory.*  
+The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.  
+The email domain to use for the new email accounts must be entered or the email accounts won't be created.  
+You can choose either Business Basic or Business Standard for the email license. Make sure to purchase enough licenses before running the script or none will be assigned.
 
 ### Remove-DistributionListMember
 

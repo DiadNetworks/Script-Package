@@ -80,426 +80,6 @@ function UpdateProgressBar {
 }
 
 # Functions for each script. Might move these into separate ps1 files at some point.
-function Add-ADAccounts {
-	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADAccounts.txt"
-	Write-Host "Running Add-ADUsers script..."
-	$progressBar1.Value = 10
-	Write-Host "Importing ActiveDirectory Module..."
-	Import-Module ActiveDirectory
-	CheckForErrors
-	$progressBar1.Value = 30
-	Write-Host "Getting domain info..."
-	$domain = Get-ADDomain
-	CheckForErrors
-	$progressBar1.Value = 40
-
-	function OnOpenTemplateButtonClick {
-		Write-Host "Open template button clicked."
-		$progressBar1.Value = 10
-		Invoke-Item ".\Templates\Add-ADAccounts.csv"
-		$progressBar1.Value = 100
-		CheckForErrors
-		$progressBar1.Value = 0
-	}
-	function OnCreateAccountsButtonClick {
-		$progressBar1.Value = 10
-		$csvFile = Import-Csv -Path ".\Templates\Add-ADAccounts.csv"
-		$progressBar1.Value = 20
-		CheckForErrors
-
-		foreach ($row in $csvFile) {
-			$sourceUser = Get-ADUser -Identity $row.SourceUser -Properties *
-
-			if ($null -eq $sourceUser) {
-				Write-Host "Source user '$($row.SourceUser)' not found. Skipping user creation for '$($row.SamAccountName)'."
-				continue
-			}
-
-			$ouPath = $sourceUser.DistinguishedName -replace "CN=[^,]+,", ""
-			$ou = Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouPath'"
-
-			if ($null -eq $ou) {
-				Write-Host "OU '$ouPath' not found. Skipping user creation for '$($row.SamAccountName)'."
-				continue
-			}
-			
-			$forest = $adDomainInput.Text
-			$displayName = $row.GivenName + " " + $row.Surname
-			$userPrincipalName = $row.SamAccountName + "@$forest"
-			$progressBar1.Value = 30
-
-			New-ADUser -SamAccountName $row.SamAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname  
-			$progressBar1.Value = 40
-
-			$newUser = Get-ADUser -Filter "SamAccountName -eq '$($row.SamAccountName)'"
-
-			# Copy additional attributes from the source user
-			Set-ADUser $newUser -ProfilePath $sourceUser.ProfilePath
-			Set-ADUser $newUser -ScriptPath $sourceUser.ScriptPath
-			Set-ADUser $newUser -PasswordNeverExpires $sourceUser.PasswordNeverExpires
-			Set-ADUser $newUser -CannotChangePassword $sourceUser.CannotChangePassword
-			$progressBar1.Value = 50
-			
-			# Construct HomeDirectory path
-			$originalPath = $sourceUser.HomeDirectory
-			$parentPath = Split-Path $originalPath -Parent
-			$homeDirectory = Join-Path $parentPath $row.SamAccountName
-			
-			# Create HomeDirectory and HomeDrive
-			New-Item -Path $homeDirectory -ItemType Directory
-			$aclPath = $homeDirectory
-			$acl = Get-Acl $aclPath
-
-			$identity = "$forest\$samAccountName"
-			$rights = "Modify"
-			$inheritanceFlags = "ContainerInherit, ObjectInherit"
-			$propagationFlags = "None"
-			$accessControlType = "Allow"
-			$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
-			$acl.AddAccessRule($rule)
-			Set-Acl $aclPath $acl
-			$progressBar1.Value = 60
-			
-			# Add HomeDirectory and HomeDrive
-			Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
-			Set-ADUser $newUser -HomeDirectory $homeDirectory
-			$progressBar1.Value = 70
-
-			# Copy security group memberships
-			$sourceGroups = Get-ADPrincipalGroupMembership $sourceUser
-			foreach ($group in $sourceGroups) {
-				Add-ADGroupMember -Identity $group -Members $newUser
-			}
-		}
-		CheckForErrors
-		OperationComplete
-	}
-
-	$scriptForm9 = New-Object System.Windows.Forms.Form
-
-	$adDomainInput = New-Object System.Windows.Forms.TextBox
-	$adDomainLabel = New-Object System.Windows.Forms.Label
-	$emailDomainLabel = New-Object System.Windows.Forms.Label
-	$emailDomainInput = New-Object System.Windows.Forms.TextBox
-	$openTemplateButton = New-Object System.Windows.Forms.Button
-	$createAccountsButton = New-Object System.Windows.Forms.Button
-	#
-	# adDomainInput
-	#
-	$adDomainInput.Location = New-Object System.Drawing.Point(82, 10)
-	$adDomainInput.Name = "adDomainInput"
-	$adDomainInput.Size = New-Object System.Drawing.Size(190, 20)
-	$adDomainInput.TabIndex = 0
-	$adDomainInput.Text = $domain.forest
-	#
-	# adDomainLabel
-	#
-	$adDomainLabel.AutoSize = $true
-	$adDomainLabel.Location = New-Object System.Drawing.Point(12, 13)
-	$adDomainLabel.Name = "adDomainLabel"
-	$adDomainLabel.Size = New-Object System.Drawing.Size(64, 13)
-	$adDomainLabel.TabIndex = 1
-	$adDomainLabel.Text = "AD Domain:"
-	#
-	# emailDomainLabel
-	#
-	$emailDomainLabel.AutoSize = $true
-	$emailDomainLabel.Location = New-Object System.Drawing.Point(12, 43)
-	$emailDomainLabel.Name = "emailDomainLabel"
-	$emailDomainLabel.Size = New-Object System.Drawing.Size(74, 13)
-	$emailDomainLabel.TabIndex = 2
-	$emailDomainLabel.Text = "Email Domain:"
-	$emailDomainLabel.Visible = $false
-	$emailDomainLabel.Enabled = $false
-	#
-	# emailDomainInput
-	#
-	$emailDomainInput.Location = New-Object System.Drawing.Point(92, 40)
-	$emailDomainInput.Name = "emailDomainInput"
-	$emailDomainInput.Size = New-Object System.Drawing.Size(180, 20)
-	$emailDomainInput.TabIndex = 3
-	$emailDomainInput.Visible = $false
-	$emailDomainInput.Enabled = $false
-	#
-	# openTemplateButton
-	#
-	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 67)
-	$openTemplateButton.Name = "openTemplateButton"
-	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
-	$openTemplateButton.TabIndex = 4
-	$openTemplateButton.Text = "Open Template"
-	$openTemplateButton.UseVisualStyleBackColor = $true
-	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
-	#
-	# createAccountsButton
-	#
-	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 96)
-	$createAccountsButton.Name = "createAccountsButton"
-	$createAccountsButton.Size = New-Object System.Drawing.Size(259, 23)
-	$createAccountsButton.TabIndex = 5
-	$createAccountsButton.Text = "Create Accounts"
-	$createAccountsButton.UseVisualStyleBackColor = $true
-	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
-	#
-	# scriptForm9
-	#
-	$scriptForm9.ClientSize = New-Object System.Drawing.Size(284, 131)
-	$scriptForm9.Controls.Add($createAccountsButton)
-	$scriptForm9.Controls.Add($openTemplateButton)
-	$scriptForm9.Controls.Add($emailDomainInput)
-	$scriptForm9.Controls.Add($emailDomainLabel)
-	$scriptForm9.Controls.Add($adDomainLabel)
-	$scriptForm9.Controls.Add($adDomainInput)
-	$scriptForm9.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-	$scriptForm9.MaximizeBox = $false
-	$scriptForm9.MinimizeBox = $false
-	$scriptForm9.Name = "scriptForm9"
-	$scriptForm9.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-	$scriptForm9.Text = "Add-ADAccounts"
-	$scriptForm9.Add_Shown({$scriptForm9.Activate()})
-
-	Write-Host "Loaded ScriptForm9."
-	$progressBar1.Value = 0
-
-	$scriptForm9.ShowDialog()
-	$scriptForm9.Dispose()
-
-	Stop-Transcript
-}
-function Add-ADAndEmailAccounts {
-	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-ADAndEmailAccounts.txt"
-	Write-Host "Running Add-ADUsersAndEmail script..."
-	$progressBar1.Value = 10
-	Write-Host "Importing ActiveDirectory Module..."
-	Import-Module ActiveDirectory
-	CheckForErrors
-	$progressBar1.Value = 30
-	Write-Host "Getting domain info..."
-	$domain = Get-ADDomain
-	CheckForErrors
-	$progressBar1.Value = 40
-
-	function OnOpenTemplateButtonClick {
-		Write-Host "Open template button clicked."
-		$progressBar1.Value = 10
-		Invoke-Item ".\Templates\Add-ADAndEmailAccounts.csv"
-		$progressBar1.Value = 100
-		CheckForErrors
-		$progressBar1.Value = 0
-	}
-
-	function OnCreateAccountsButtonClick {
-		$progressBar1.Value = 10
-		$csvFile = Import-Csv -Path ".\Templates\Add-ADAndEmailAccounts.csv"
-		$progressBar1.Value = 30
-		CheckForErrors
-		foreach ($row in $csvFile) {
-			$sourceUser = Get-ADUser -Identity $row.SourceUser -Properties *
-		
-			if ($null -eq $sourceUser) {
-				Write-Host "Source user '$($row.SourceUser)' not found. Skipping user creation for '$($row.SamAccountName)'."
-				continue
-			}
-		
-			$ouPath = $sourceUser.DistinguishedName -replace "CN=[^,]+,", ""
-			$ou = Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouPath'"
-		
-			if ($null -eq $ou) {
-				Write-Host "OU '$ouPath' not found. Skipping user creation for '$($row.SamAccountName)'."
-				continue
-			}
-
-			$forest = $adDomainInput.Text
-			$domain = $emailDomainInput.Text -split '\.'
-			$emailDomain = $domain[0]
-			$topLevelDomain = $domain[1]
-			$displayName = $row.GivenName + " " + $row.Surname
-			$samAccountName = $row.SamAccountName
-			$userPrincipalName = $row.SamAccountName + "@$forest"
-			$emailAddress = $row.SamAccountName + "@$emailDomain.$topLevelDomain"
-			# $aliasAddress = $row.SamAccountName + "@$emailDomain.onmicrosoft.com"
-			$progressBar1.Value = 30
-		
-			New-ADUser -SamAccountName $row.SamAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname
-			$progressBar1.Value = 40
-		
-			$newUser = Get-ADUser -Filter "SamAccountName -eq '$($row.SamAccountName)'"
-		
-			# Copy additional attributes from the source user
-			Set-ADUser $newUser -ProfilePath $sourceUser.ProfilePath
-			Set-ADUser $newUser -ScriptPath $sourceUser.ScriptPath
-			Set-ADUser $newUser -PasswordNeverExpires $sourceUser.PasswordNeverExpires
-			Set-ADUser $newUser -CannotChangePassword $sourceUser.CannotChangePassword
-			$progressBar1.Value = 50
-			
-			# Construct HomeDirectory path
-			$originalPath = $sourceUser.HomeDirectory
-			$parentPath = Split-Path $originalPath -Parent
-			$homeDirectory = Join-Path $parentPath $row.SamAccountName
-			
-			# Create HomeDirectory and HomeDrive
-			New-Item -Path $homeDirectory -ItemType Directory
-			$aclPath = $homeDirectory
-			$acl = Get-Acl $aclPath
-
-			$identity = "$forest\$samAccountName"
-			$rights = "Modify"
-			$inheritanceFlags = "ContainerInherit, ObjectInherit"
-			$propagationFlags = "None"
-			$accessControlType = "Allow"
-			$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
-			$acl.AddAccessRule($rule)
-			Set-Acl $aclPath $acl
-			$progressBar1.Value = 60
-			
-			# Add HomeDirectory and HomeDrive
-			Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
-			Set-ADUser $newUser -HomeDirectory $homeDirectory
-			$progressBar1.Value = 70
-		
-			# Copy security group memberships
-			$sourceGroups = Get-ADPrincipalGroupMembership $sourceUser
-			foreach ($group in $sourceGroups) {
-				Add-ADGroupMember -Identity $group -Members $newUser
-			}
-			$progressBar1.Value = 80
-		
-			# Create mailbox
-			$passwordProfile = @{
-				ForceChangePasswordNextSignIn = $false
-				Password = $row.Password
-			}
-		
-			New-MgUser -AccountEnabled -PasswordProfile $passwordProfile -DisplayName $displayName -GivenName $row.GivenName -Surname $row.Surname -UserPrincipalName $emailAddress -MailNickname $row.SamAccountName -UsageLocation US
-			$progressBar1.Value = 90
-
-			# Set license
-			if ($licenseComboBox.Text -eq "Business Basic") {
-				Write-Host "Assigning Business Basic license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
-			} elseif ($licenseComboBox.Text -eq "Business Standard") {
-				Write-Host "Assigning Business Standard license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
-			} else {
-				Write-Host "No license selected or invalid entry."
-			}
-		}
-		CheckForErrors
-		OperationComplete
-	}
-
-	$scriptForm9 = New-Object System.Windows.Forms.Form
-
-	$adDomainInput = New-Object System.Windows.Forms.TextBox
-	$adDomainLabel = New-Object System.Windows.Forms.Label
-	$emailDomainLabel = New-Object System.Windows.Forms.Label
-	$emailDomainInput = New-Object System.Windows.Forms.TextBox
-	$openTemplateButton = New-Object System.Windows.Forms.Button
-	$createAccountsButton = New-Object System.Windows.Forms.Button
-	$licenseComboBox = New-Object System.Windows.Forms.ComboBox
-	$emailLicenseLabel = New-Object System.Windows.Forms.Label
-	#
-	# adDomainInput
-	#
-	$adDomainInput.Location = New-Object System.Drawing.Point(82, 10)
-	$adDomainInput.Name = "adDomainInput"
-	$adDomainInput.Size = New-Object System.Drawing.Size(190, 20)
-	$adDomainInput.TabIndex = 1
-	$adDomainInput.Text = $domain.forest
-	#
-	# adDomainLabel
-	#
-	$adDomainLabel.AutoSize = $true
-	$adDomainLabel.Location = New-Object System.Drawing.Point(12, 13)
-	$adDomainLabel.Name = "adDomainLabel"
-	$adDomainLabel.Size = New-Object System.Drawing.Size(64, 13)
-	$adDomainLabel.TabIndex = 0
-	$adDomainLabel.Text = "AD Domain:"
-	#
-	# emailDomainLabel
-	#
-	$emailDomainLabel.AutoSize = $true
-	$emailDomainLabel.Location = New-Object System.Drawing.Point(12, 43)
-	$emailDomainLabel.Name = "emailDomainLabel"
-	$emailDomainLabel.Size = New-Object System.Drawing.Size(74, 13)
-	$emailDomainLabel.TabIndex = 2
-	$emailDomainLabel.Text = "Email Domain:"
-	#
-	# emailDomainInput
-	#
-	$emailDomainInput.Location = New-Object System.Drawing.Point(92, 40)
-	$emailDomainInput.Name = "emailDomainInput"
-	$emailDomainInput.Size = New-Object System.Drawing.Size(180, 20)
-	$emailDomainInput.TabIndex = 3
-	$emailDomainInput.PlaceholderText = "Example: contoso.com"
-	#
-	# openTemplateButton
-	#
-	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 97)
-	$openTemplateButton.Name = "openTemplateButton"
-	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
-	$openTemplateButton.TabIndex = 6
-	$openTemplateButton.Text = "Open Template"
-	$openTemplateButton.UseVisualStyleBackColor = $true
-	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
-	#
-	# createAccountsButton
-	#
-	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 126)
-	$createAccountsButton.Name = "createAccountsButton"
-	$createAccountsButton.Size = New-Object System.Drawing.Size(260, 23)
-	$createAccountsButton.TabIndex = 7
-	$createAccountsButton.Text = "Create Accounts"
-	$createAccountsButton.UseVisualStyleBackColor = $true
-	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
-	#
-	# licenseComboBox
-	#
-	$licenseComboBox.FormattingEnabled = $true
-	$licenseComboBox.Items.AddRange(@(
-	"Business Basic",
-	"Business Standard"))
-	$licenseComboBox.Location = New-Object System.Drawing.Point(93, 70)
-	$licenseComboBox.Name = "licenseComboBox"
-	$licenseComboBox.Size = New-Object System.Drawing.Size(179, 21)
-	$licenseComboBox.TabIndex = 5
-	#
-	# emailLicenseLabel
-	#
-	$emailLicenseLabel.AutoSize = $true
-	$emailLicenseLabel.Location = New-Object System.Drawing.Point(12, 73)
-	$emailLicenseLabel.Name = "emailLicenseLabel"
-	$emailLicenseLabel.Size = New-Object System.Drawing.Size(75, 13)
-	$emailLicenseLabel.TabIndex = 4
-	$emailLicenseLabel.Text = "Email License:"
-	#
-	# scriptForm9
-	#
-	$scriptForm9.ClientSize = New-Object System.Drawing.Size(284, 161)
-	$scriptForm9.Controls.Add($emailLicenseLabel)
-	$scriptForm9.Controls.Add($licenseComboBox)
-	$scriptForm9.Controls.Add($createAccountsButton)
-	$scriptForm9.Controls.Add($openTemplateButton)
-	$scriptForm9.Controls.Add($emailDomainInput)
-	$scriptForm9.Controls.Add($emailDomainLabel)
-	$scriptForm9.Controls.Add($adDomainLabel)
-	$scriptForm9.Controls.Add($adDomainInput)
-	$scriptForm9.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-	$scriptForm9.MaximizeBox = $false
-	$scriptForm9.MinimizeBox = $false
-	$scriptForm9.Name = "scriptForm9"
-	$scriptForm9.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-	$scriptForm9.Text = "Add-ADAndEmailAccounts"
-	$scriptForm9.Add_Shown({$scriptForm9.Activate()})
-
-	Write-Host "Loaded ScriptForm9."
-	$progressBar1.Value = 0
-
-	$scriptForm9.ShowDialog()
-	$scriptForm9.Dispose()
-
-	Stop-Transcript
-}
 function Add-AuthenticationPhoneMethod {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-AuthenticationPhoneMethod.txt"
 	Write-Host "Running Add-2FA script..."
@@ -1255,131 +835,6 @@ function Add-DistributionListMember {
 	$scriptForm8.ShowDialog()
 	$scriptForm8.Dispose()
 
-	Stop-Transcript
-}
-function Add-EmailAccounts {
-	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Add-EmailAccounts.txt"
-	Write-Host "Running Add-EmailAccounts script..."
-	$progressBar1.Value = 10
-
-	function OnOpenTemplateButtonClick {
-		Write-Host "Open template button clicked."
-		$progressBar1.Value = 10
-		Invoke-Item ".\Templates\Add-EmailAccounts.csv"
-		$progressBar1.Value = 100
-		CheckForErrors
-		$progressBar1.Value = 0
-	}
-	function OnCreateAccountsButtonClick {
-		Write-Host "createAccountsButton clicked."
-		$progressBar1.Value = 10
-		Import-Csv ".\Templates\Add-EmailAccounts.csv" | ForEach-Object {
-			$progressBar1.Value = 10
-			$firstName = $_.FirstName
-			$lastName = $_.LastName
-			$displayName = $firstName + " " + $lastName
-			$emailAddress = $_.EmailAddress
-			$splitEmail = $emailAddress -split "\@"
-			$mailNickname = $splitEmail[0]
-			$password = $_.Password
-
-			$passwordProfile = @{
-				ForceChangePasswordNextSignIn = $false
-				Password = $password
-			}
-
-			$progressBar1.Value = 30
-		
-			New-MgUser -AccountEnabled -PasswordProfile $passwordProfile -DisplayName $displayName -GivenName $firstName -Surname $lastName -UserPrincipalName $emailAddress -MailNickname $mailNickname -UsageLocation US
-			$progressBar1.Value = 60
-		
-			# Set license
-			if ($licenseComboBox.Text -eq "Business Basic") {
-				Write-Host "Assigning Business Basic license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
-			} elseif ($licenseComboBox.Text -eq "Business Standard") {
-				Write-Host "Assigning Business Standard license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
-			} else {
-				Write-Host "No license selected or invalid entry."
-			}
-			$progressBar1.Value = 90
-		}
-		CheckForErrors
-		OperationComplete
-	}
-
-	$addEmailAccountsForm = New-Object System.Windows.Forms.Form
-
-	$emailLicenseLabel = New-Object System.Windows.Forms.Label
-	$licenseComboBox = New-Object System.Windows.Forms.ComboBox
-	$createAccountsButton = New-Object System.Windows.Forms.Button
-	$openTemplateButton = New-Object System.Windows.Forms.Button
-	#
-	# emailLicenseLabel
-	#
-	$emailLicenseLabel.AutoSize = $true
-	$emailLicenseLabel.Location = New-Object System.Drawing.Point(9, 15)
-	$emailLicenseLabel.Name = "emailLicenseLabel"
-	$emailLicenseLabel.Size = New-Object System.Drawing.Size(75, 13)
-	$emailLicenseLabel.TabIndex = 0
-	$emailLicenseLabel.Text = "Email License:"
-	#
-	# licenseComboBox
-	#
-	$licenseComboBox.FormattingEnabled = $true
-	$licenseComboBox.Items.AddRange(@(
-	"Business Basic",
-	"Business Standard"))
-	$licenseComboBox.Location = New-Object System.Drawing.Point(90, 12)
-	$licenseComboBox.Name = "licenseComboBox"
-	$licenseComboBox.Size = New-Object System.Drawing.Size(182, 21)
-	$licenseComboBox.TabIndex = 1
-	#
-	# createAccountsButton
-	#
-	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 68)
-	$createAccountsButton.Name = "createAccountsButton"
-	$createAccountsButton.Size = New-Object System.Drawing.Size(260, 23)
-	$createAccountsButton.TabIndex = 3
-	$createAccountsButton.Text = "Create Accounts"
-	$createAccountsButton.UseVisualStyleBackColor = $true
-	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
-	#
-	# openTemplateButton
-	#
-	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 39)
-	$openTemplateButton.Name = "openTemplateButton"
-	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
-	$openTemplateButton.TabIndex = 2
-	$openTemplateButton.Text = "Open Template"
-	$openTemplateButton.UseVisualStyleBackColor = $true
-	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
-	#
-	# addEmailAccountsForm
-	#
-	$addEmailAccountsForm.ClientSize = New-Object System.Drawing.Size(284, 103)
-	$addEmailAccountsForm.Controls.Add($emailLicenseLabel)
-	$addEmailAccountsForm.Controls.Add($licenseComboBox)
-	$addEmailAccountsForm.Controls.Add($createAccountsButton)
-	$addEmailAccountsForm.Controls.Add($openTemplateButton)
-	$addEmailAccountsForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-	$addEmailAccountsForm.MaximizeBox = $false
-	$addEmailAccountsForm.MinimizeBox = $false
-	$addEmailAccountsForm.Name = "addEmailAccountsForm"
-	$addEmailAccountsForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
-	$addEmailAccountsForm.Text = "Add-EmailAccounts"
-	$addEmailAccountsForm.Add_Shown({$addEmailAccountsForm.Activate()})
-
-	Write-Host "Loaded addEmailAccountsForm."
-	$progressBar1.Value = 100
-	CheckForErrors
-	$progressBar1.Value = 0
-
-	$addEmailAccountsForm.ShowDialog()
-	# Release the Form
-	$addEmailAccountsForm.Dispose()
-	
 	Stop-Transcript
 }
 function Add-EmailAlias {
@@ -3074,6 +2529,551 @@ function Install-RequiredModules {
 	OperationComplete
 	Stop-Transcript
 }
+function New-ADAccounts {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\New-ADAccounts.txt"
+	Write-Host "Running Add-ADUsers script..."
+	$progressBar1.Value = 10
+	Write-Host "Importing ActiveDirectory Module..."
+	Import-Module ActiveDirectory
+	CheckForErrors
+	$progressBar1.Value = 30
+	Write-Host "Getting domain info..."
+	$domain = Get-ADDomain
+	CheckForErrors
+	$progressBar1.Value = 40
+
+	function OnOpenTemplateButtonClick {
+		Write-Host "Open template button clicked."
+		$progressBar1.Value = 10
+		Invoke-Item ".\Templates\New-ADAccounts.csv"
+		$progressBar1.Value = 100
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+	function OnCreateAccountsButtonClick {
+		$progressBar1.Value = 10
+		$csvFile = Import-Csv -Path ".\Templates\New-ADAccounts.csv"
+		$progressBar1.Value = 20
+		CheckForErrors
+
+		foreach ($row in $csvFile) {
+			$sourceUser = Get-ADUser -Identity $row.SourceUser -Properties *
+
+			if ($null -eq $sourceUser) {
+				Write-Host "Source user '$($row.SourceUser)' not found. Skipping user creation for '$($row.SamAccountName)'."
+				continue
+			}
+
+			$ouPath = $sourceUser.DistinguishedName -replace "CN=[^,]+,", ""
+			$ou = Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouPath'"
+
+			if ($null -eq $ou) {
+				Write-Host "OU '$ouPath' not found. Skipping user creation for '$($row.SamAccountName)'."
+				continue
+			}
+			
+			$forest = $adDomainInput.Text
+			$displayName = $row.GivenName + " " + $row.Surname
+			$userPrincipalName = $row.SamAccountName + "@$forest"
+			$progressBar1.Value = 30
+
+			New-ADUser -SamAccountName $row.SamAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname  
+			$progressBar1.Value = 40
+
+			$newUser = Get-ADUser -Filter "SamAccountName -eq '$($row.SamAccountName)'"
+
+			# Copy additional attributes from the source user
+			Set-ADUser $newUser -ProfilePath $sourceUser.ProfilePath
+			Set-ADUser $newUser -ScriptPath $sourceUser.ScriptPath
+			Set-ADUser $newUser -PasswordNeverExpires $sourceUser.PasswordNeverExpires
+			Set-ADUser $newUser -CannotChangePassword $sourceUser.CannotChangePassword
+			$progressBar1.Value = 50
+			
+			# Construct HomeDirectory path
+			$originalPath = $sourceUser.HomeDirectory
+			$parentPath = Split-Path $originalPath -Parent
+			$homeDirectory = Join-Path $parentPath $row.SamAccountName
+			
+			# Create HomeDirectory and HomeDrive
+			New-Item -Path $homeDirectory -ItemType Directory
+			$aclPath = $homeDirectory
+			$acl = Get-Acl $aclPath
+
+			$identity = "$forest\$samAccountName"
+			$rights = "Modify"
+			$inheritanceFlags = "ContainerInherit, ObjectInherit"
+			$propagationFlags = "None"
+			$accessControlType = "Allow"
+			$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
+			$acl.AddAccessRule($rule)
+			Set-Acl $aclPath $acl
+			$progressBar1.Value = 60
+			
+			# Add HomeDirectory and HomeDrive
+			Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
+			Set-ADUser $newUser -HomeDirectory $homeDirectory
+			$progressBar1.Value = 70
+
+			# Copy security group memberships
+			$sourceGroups = Get-ADPrincipalGroupMembership $sourceUser
+			foreach ($group in $sourceGroups) {
+				Add-ADGroupMember -Identity $group -Members $newUser
+			}
+		}
+		CheckForErrors
+		OperationComplete
+	}
+
+	$scriptForm9 = New-Object System.Windows.Forms.Form
+
+	$adDomainInput = New-Object System.Windows.Forms.TextBox
+	$adDomainLabel = New-Object System.Windows.Forms.Label
+	$emailDomainLabel = New-Object System.Windows.Forms.Label
+	$emailDomainInput = New-Object System.Windows.Forms.TextBox
+	$openTemplateButton = New-Object System.Windows.Forms.Button
+	$createAccountsButton = New-Object System.Windows.Forms.Button
+	#
+	# adDomainInput
+	#
+	$adDomainInput.Location = New-Object System.Drawing.Point(82, 10)
+	$adDomainInput.Name = "adDomainInput"
+	$adDomainInput.Size = New-Object System.Drawing.Size(190, 20)
+	$adDomainInput.TabIndex = 0
+	$adDomainInput.Text = $domain.forest
+	#
+	# adDomainLabel
+	#
+	$adDomainLabel.AutoSize = $true
+	$adDomainLabel.Location = New-Object System.Drawing.Point(12, 13)
+	$adDomainLabel.Name = "adDomainLabel"
+	$adDomainLabel.Size = New-Object System.Drawing.Size(64, 13)
+	$adDomainLabel.TabIndex = 1
+	$adDomainLabel.Text = "AD Domain:"
+	#
+	# emailDomainLabel
+	#
+	$emailDomainLabel.AutoSize = $true
+	$emailDomainLabel.Location = New-Object System.Drawing.Point(12, 43)
+	$emailDomainLabel.Name = "emailDomainLabel"
+	$emailDomainLabel.Size = New-Object System.Drawing.Size(74, 13)
+	$emailDomainLabel.TabIndex = 2
+	$emailDomainLabel.Text = "Email Domain:"
+	$emailDomainLabel.Visible = $false
+	$emailDomainLabel.Enabled = $false
+	#
+	# emailDomainInput
+	#
+	$emailDomainInput.Location = New-Object System.Drawing.Point(92, 40)
+	$emailDomainInput.Name = "emailDomainInput"
+	$emailDomainInput.Size = New-Object System.Drawing.Size(180, 20)
+	$emailDomainInput.TabIndex = 3
+	$emailDomainInput.Visible = $false
+	$emailDomainInput.Enabled = $false
+	#
+	# openTemplateButton
+	#
+	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 67)
+	$openTemplateButton.Name = "openTemplateButton"
+	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
+	$openTemplateButton.TabIndex = 4
+	$openTemplateButton.Text = "Open Template"
+	$openTemplateButton.UseVisualStyleBackColor = $true
+	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
+	#
+	# createAccountsButton
+	#
+	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 96)
+	$createAccountsButton.Name = "createAccountsButton"
+	$createAccountsButton.Size = New-Object System.Drawing.Size(259, 23)
+	$createAccountsButton.TabIndex = 5
+	$createAccountsButton.Text = "Create Accounts"
+	$createAccountsButton.UseVisualStyleBackColor = $true
+	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
+	#
+	# scriptForm9
+	#
+	$scriptForm9.ClientSize = New-Object System.Drawing.Size(284, 131)
+	$scriptForm9.Controls.Add($createAccountsButton)
+	$scriptForm9.Controls.Add($openTemplateButton)
+	$scriptForm9.Controls.Add($emailDomainInput)
+	$scriptForm9.Controls.Add($emailDomainLabel)
+	$scriptForm9.Controls.Add($adDomainLabel)
+	$scriptForm9.Controls.Add($adDomainInput)
+	$scriptForm9.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$scriptForm9.MaximizeBox = $false
+	$scriptForm9.MinimizeBox = $false
+	$scriptForm9.Name = "scriptForm9"
+	$scriptForm9.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$scriptForm9.Text = "New-ADAccounts"
+	$scriptForm9.Add_Shown({$scriptForm9.Activate()})
+
+	Write-Host "Loaded ScriptForm9."
+	$progressBar1.Value = 0
+
+	$scriptForm9.ShowDialog()
+	$scriptForm9.Dispose()
+
+	Stop-Transcript
+}
+function New-ADAndEmailAccounts {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\New-ADAndEmailAccounts.txt"
+	Write-Host "Running Add-ADUsersAndEmail script..."
+	$progressBar1.Value = 10
+	Write-Host "Importing ActiveDirectory Module..."
+	Import-Module ActiveDirectory
+	CheckForErrors
+	$progressBar1.Value = 30
+	Write-Host "Getting domain info..."
+	$domain = Get-ADDomain
+	CheckForErrors
+	$progressBar1.Value = 40
+
+	function OnOpenTemplateButtonClick {
+		Write-Host "Open template button clicked."
+		$progressBar1.Value = 10
+		Invoke-Item ".\Templates\New-ADAndEmailAccounts.csv"
+		$progressBar1.Value = 100
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+
+	function OnCreateAccountsButtonClick {
+		$progressBar1.Value = 10
+		$csvFile = Import-Csv -Path ".\Templates\New-ADAndEmailAccounts.csv"
+		$progressBar1.Value = 30
+		CheckForErrors
+		foreach ($row in $csvFile) {
+			$sourceUser = Get-ADUser -Identity $row.SourceUser -Properties *
+		
+			if ($null -eq $sourceUser) {
+				Write-Host "Source user '$($row.SourceUser)' not found. Skipping user creation for '$($row.SamAccountName)'."
+				continue
+			}
+		
+			$ouPath = $sourceUser.DistinguishedName -replace "CN=[^,]+,", ""
+			$ou = Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouPath'"
+		
+			if ($null -eq $ou) {
+				Write-Host "OU '$ouPath' not found. Skipping user creation for '$($row.SamAccountName)'."
+				continue
+			}
+
+			$forest = $adDomainInput.Text
+			$domain = $emailDomainInput.Text -split '\.'
+			$emailDomain = $domain[0]
+			$topLevelDomain = $domain[1]
+			$displayName = $row.GivenName + " " + $row.Surname
+			$samAccountName = $row.SamAccountName
+			$userPrincipalName = $row.SamAccountName + "@$forest"
+			$emailAddress = $row.SamAccountName + "@$emailDomain.$topLevelDomain"
+			# $aliasAddress = $row.SamAccountName + "@$emailDomain.onmicrosoft.com"
+			$progressBar1.Value = 30
+		
+			New-ADUser -SamAccountName $row.SamAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname
+			$progressBar1.Value = 40
+		
+			$newUser = Get-ADUser -Filter "SamAccountName -eq '$($row.SamAccountName)'"
+		
+			# Copy additional attributes from the source user
+			Set-ADUser $newUser -ProfilePath $sourceUser.ProfilePath
+			Set-ADUser $newUser -ScriptPath $sourceUser.ScriptPath
+			Set-ADUser $newUser -PasswordNeverExpires $sourceUser.PasswordNeverExpires
+			Set-ADUser $newUser -CannotChangePassword $sourceUser.CannotChangePassword
+			$progressBar1.Value = 50
+			
+			# Construct HomeDirectory path
+			$originalPath = $sourceUser.HomeDirectory
+			$parentPath = Split-Path $originalPath -Parent
+			$homeDirectory = Join-Path $parentPath $row.SamAccountName
+			
+			# Create HomeDirectory and HomeDrive
+			New-Item -Path $homeDirectory -ItemType Directory
+			$aclPath = $homeDirectory
+			$acl = Get-Acl $aclPath
+
+			$identity = "$forest\$samAccountName"
+			$rights = "Modify"
+			$inheritanceFlags = "ContainerInherit, ObjectInherit"
+			$propagationFlags = "None"
+			$accessControlType = "Allow"
+			$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
+			$acl.AddAccessRule($rule)
+			Set-Acl $aclPath $acl
+			$progressBar1.Value = 60
+			
+			# Add HomeDirectory and HomeDrive
+			Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
+			Set-ADUser $newUser -HomeDirectory $homeDirectory
+			$progressBar1.Value = 70
+		
+			# Copy security group memberships
+			$sourceGroups = Get-ADPrincipalGroupMembership $sourceUser
+			foreach ($group in $sourceGroups) {
+				Add-ADGroupMember -Identity $group -Members $newUser
+			}
+			$progressBar1.Value = 80
+		
+			# Create mailbox
+			$passwordProfile = @{
+				ForceChangePasswordNextSignIn = $false
+				Password = $row.Password
+			}
+		
+			New-MgUser -AccountEnabled -PasswordProfile $passwordProfile -DisplayName $displayName -GivenName $row.GivenName -Surname $row.Surname -UserPrincipalName $emailAddress -MailNickname $row.SamAccountName -UsageLocation US
+			$progressBar1.Value = 90
+
+			# Set license
+			if ($licenseComboBox.Text -eq "Business Basic") {
+				Write-Host "Assigning Business Basic license..."
+				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
+			} elseif ($licenseComboBox.Text -eq "Business Standard") {
+				Write-Host "Assigning Business Standard license..."
+				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
+			} else {
+				Write-Host "No license selected or invalid entry."
+			}
+		}
+		CheckForErrors
+		OperationComplete
+	}
+
+	$scriptForm9 = New-Object System.Windows.Forms.Form
+
+	$adDomainInput = New-Object System.Windows.Forms.TextBox
+	$adDomainLabel = New-Object System.Windows.Forms.Label
+	$emailDomainLabel = New-Object System.Windows.Forms.Label
+	$emailDomainInput = New-Object System.Windows.Forms.TextBox
+	$openTemplateButton = New-Object System.Windows.Forms.Button
+	$createAccountsButton = New-Object System.Windows.Forms.Button
+	$licenseComboBox = New-Object System.Windows.Forms.ComboBox
+	$emailLicenseLabel = New-Object System.Windows.Forms.Label
+	#
+	# adDomainInput
+	#
+	$adDomainInput.Location = New-Object System.Drawing.Point(82, 10)
+	$adDomainInput.Name = "adDomainInput"
+	$adDomainInput.Size = New-Object System.Drawing.Size(190, 20)
+	$adDomainInput.TabIndex = 1
+	$adDomainInput.Text = $domain.forest
+	#
+	# adDomainLabel
+	#
+	$adDomainLabel.AutoSize = $true
+	$adDomainLabel.Location = New-Object System.Drawing.Point(12, 13)
+	$adDomainLabel.Name = "adDomainLabel"
+	$adDomainLabel.Size = New-Object System.Drawing.Size(64, 13)
+	$adDomainLabel.TabIndex = 0
+	$adDomainLabel.Text = "AD Domain:"
+	#
+	# emailDomainLabel
+	#
+	$emailDomainLabel.AutoSize = $true
+	$emailDomainLabel.Location = New-Object System.Drawing.Point(12, 43)
+	$emailDomainLabel.Name = "emailDomainLabel"
+	$emailDomainLabel.Size = New-Object System.Drawing.Size(74, 13)
+	$emailDomainLabel.TabIndex = 2
+	$emailDomainLabel.Text = "Email Domain:"
+	#
+	# emailDomainInput
+	#
+	$emailDomainInput.Location = New-Object System.Drawing.Point(92, 40)
+	$emailDomainInput.Name = "emailDomainInput"
+	$emailDomainInput.Size = New-Object System.Drawing.Size(180, 20)
+	$emailDomainInput.TabIndex = 3
+	$emailDomainInput.PlaceholderText = "Example: contoso.com"
+	#
+	# openTemplateButton
+	#
+	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 97)
+	$openTemplateButton.Name = "openTemplateButton"
+	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
+	$openTemplateButton.TabIndex = 6
+	$openTemplateButton.Text = "Open Template"
+	$openTemplateButton.UseVisualStyleBackColor = $true
+	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
+	#
+	# createAccountsButton
+	#
+	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 126)
+	$createAccountsButton.Name = "createAccountsButton"
+	$createAccountsButton.Size = New-Object System.Drawing.Size(260, 23)
+	$createAccountsButton.TabIndex = 7
+	$createAccountsButton.Text = "Create Accounts"
+	$createAccountsButton.UseVisualStyleBackColor = $true
+	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
+	#
+	# licenseComboBox
+	#
+	$licenseComboBox.FormattingEnabled = $true
+	$licenseComboBox.Items.AddRange(@(
+	"Business Basic",
+	"Business Standard"))
+	$licenseComboBox.Location = New-Object System.Drawing.Point(93, 70)
+	$licenseComboBox.Name = "licenseComboBox"
+	$licenseComboBox.Size = New-Object System.Drawing.Size(179, 21)
+	$licenseComboBox.TabIndex = 5
+	#
+	# emailLicenseLabel
+	#
+	$emailLicenseLabel.AutoSize = $true
+	$emailLicenseLabel.Location = New-Object System.Drawing.Point(12, 73)
+	$emailLicenseLabel.Name = "emailLicenseLabel"
+	$emailLicenseLabel.Size = New-Object System.Drawing.Size(75, 13)
+	$emailLicenseLabel.TabIndex = 4
+	$emailLicenseLabel.Text = "Email License:"
+	#
+	# scriptForm9
+	#
+	$scriptForm9.ClientSize = New-Object System.Drawing.Size(284, 161)
+	$scriptForm9.Controls.Add($emailLicenseLabel)
+	$scriptForm9.Controls.Add($licenseComboBox)
+	$scriptForm9.Controls.Add($createAccountsButton)
+	$scriptForm9.Controls.Add($openTemplateButton)
+	$scriptForm9.Controls.Add($emailDomainInput)
+	$scriptForm9.Controls.Add($emailDomainLabel)
+	$scriptForm9.Controls.Add($adDomainLabel)
+	$scriptForm9.Controls.Add($adDomainInput)
+	$scriptForm9.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$scriptForm9.MaximizeBox = $false
+	$scriptForm9.MinimizeBox = $false
+	$scriptForm9.Name = "scriptForm9"
+	$scriptForm9.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$scriptForm9.Text = "New-ADAndEmailAccounts"
+	$scriptForm9.Add_Shown({$scriptForm9.Activate()})
+
+	Write-Host "Loaded ScriptForm9."
+	$progressBar1.Value = 0
+
+	$scriptForm9.ShowDialog()
+	$scriptForm9.Dispose()
+
+	Stop-Transcript
+}
+function New-EmailAccounts {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\New-EmailAccounts.txt"
+	Write-Host "Running New-EmailAccounts script..."
+	$progressBar1.Value = 10
+
+	function OnOpenTemplateButtonClick {
+		Write-Host "Open template button clicked."
+		$progressBar1.Value = 10
+		Invoke-Item ".\Templates\New-EmailAccounts.csv"
+		$progressBar1.Value = 100
+		CheckForErrors
+		$progressBar1.Value = 0
+	}
+	function OnCreateAccountsButtonClick {
+		Write-Host "createAccountsButton clicked."
+		$progressBar1.Value = 10
+		Import-Csv ".\Templates\New-EmailAccounts.csv" | ForEach-Object {
+			$progressBar1.Value = 10
+			$firstName = $_.FirstName
+			$lastName = $_.LastName
+			$displayName = $firstName + " " + $lastName
+			$emailAddress = $_.EmailAddress
+			$splitEmail = $emailAddress -split "\@"
+			$mailNickname = $splitEmail[0]
+			$password = $_.Password
+
+			$passwordProfile = @{
+				ForceChangePasswordNextSignIn = $false
+				Password = $password
+			}
+
+			$progressBar1.Value = 30
+		
+			New-MgUser -AccountEnabled -PasswordProfile $passwordProfile -DisplayName $displayName -GivenName $firstName -Surname $lastName -UserPrincipalName $emailAddress -MailNickname $mailNickname -UsageLocation US
+			$progressBar1.Value = 60
+		
+			# Set license
+			if ($licenseComboBox.Text -eq "Business Basic") {
+				Write-Host "Assigning Business Basic license..."
+				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
+			} elseif ($licenseComboBox.Text -eq "Business Standard") {
+				Write-Host "Assigning Business Standard license..."
+				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
+			} else {
+				Write-Host "No license selected or invalid entry."
+			}
+			$progressBar1.Value = 90
+		}
+		CheckForErrors
+		OperationComplete
+	}
+
+	$addEmailAccountsForm = New-Object System.Windows.Forms.Form
+
+	$emailLicenseLabel = New-Object System.Windows.Forms.Label
+	$licenseComboBox = New-Object System.Windows.Forms.ComboBox
+	$createAccountsButton = New-Object System.Windows.Forms.Button
+	$openTemplateButton = New-Object System.Windows.Forms.Button
+	#
+	# emailLicenseLabel
+	#
+	$emailLicenseLabel.AutoSize = $true
+	$emailLicenseLabel.Location = New-Object System.Drawing.Point(9, 15)
+	$emailLicenseLabel.Name = "emailLicenseLabel"
+	$emailLicenseLabel.Size = New-Object System.Drawing.Size(75, 13)
+	$emailLicenseLabel.TabIndex = 0
+	$emailLicenseLabel.Text = "Email License:"
+	#
+	# licenseComboBox
+	#
+	$licenseComboBox.FormattingEnabled = $true
+	$licenseComboBox.Items.AddRange(@(
+	"Business Basic",
+	"Business Standard"))
+	$licenseComboBox.Location = New-Object System.Drawing.Point(90, 12)
+	$licenseComboBox.Name = "licenseComboBox"
+	$licenseComboBox.Size = New-Object System.Drawing.Size(182, 21)
+	$licenseComboBox.TabIndex = 1
+	#
+	# createAccountsButton
+	#
+	$createAccountsButton.Location = New-Object System.Drawing.Point(12, 68)
+	$createAccountsButton.Name = "createAccountsButton"
+	$createAccountsButton.Size = New-Object System.Drawing.Size(260, 23)
+	$createAccountsButton.TabIndex = 3
+	$createAccountsButton.Text = "Create Accounts"
+	$createAccountsButton.UseVisualStyleBackColor = $true
+	$createAccountsButton.Add_Click({OnCreateAccountsButtonClick})
+	#
+	# openTemplateButton
+	#
+	$openTemplateButton.Location = New-Object System.Drawing.Point(12, 39)
+	$openTemplateButton.Name = "openTemplateButton"
+	$openTemplateButton.Size = New-Object System.Drawing.Size(260, 23)
+	$openTemplateButton.TabIndex = 2
+	$openTemplateButton.Text = "Open Template"
+	$openTemplateButton.UseVisualStyleBackColor = $true
+	$openTemplateButton.Add_Click({OnOpenTemplateButtonClick})
+	#
+	# addEmailAccountsForm
+	#
+	$addEmailAccountsForm.ClientSize = New-Object System.Drawing.Size(284, 103)
+	$addEmailAccountsForm.Controls.Add($emailLicenseLabel)
+	$addEmailAccountsForm.Controls.Add($licenseComboBox)
+	$addEmailAccountsForm.Controls.Add($createAccountsButton)
+	$addEmailAccountsForm.Controls.Add($openTemplateButton)
+	$addEmailAccountsForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+	$addEmailAccountsForm.MaximizeBox = $false
+	$addEmailAccountsForm.MinimizeBox = $false
+	$addEmailAccountsForm.Name = "addEmailAccountsForm"
+	$addEmailAccountsForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+	$addEmailAccountsForm.Text = "New-EmailAccounts"
+	$addEmailAccountsForm.Add_Shown({$addEmailAccountsForm.Activate()})
+
+	Write-Host "Loaded addEmailAccountsForm."
+	$progressBar1.Value = 100
+	CheckForErrors
+	$progressBar1.Value = 0
+
+	$addEmailAccountsForm.ShowDialog()
+	# Release the Form
+	$addEmailAccountsForm.Dispose()
+	
+	Stop-Transcript
+}
 function New-InboxRule-SP {
 	New-InboxRule -Name ForwardMail -Mailbox example@contoso.com -From example@contoso.com -ForwardTo example@contoso.com -MarkAsRead $true -MoveToFolder example@contoso.com:\Completed
 }
@@ -4471,13 +4471,13 @@ function Show-Information {
 
 # This list is what will be visible in the scriptSelect ComboBox
 $scriptList = @(
-	"Add-ADAccounts",
-	"Add-ADAndEmailAccounts",
+	"New-ADAccounts",
+	"New-ADAndEmailAccounts",
 	"Add-AuthenticationPhoneMethod",
 	"Add-AutoReply",
 	"Add-Contacts",
 	"Add-DistributionListMember",
-	"Add-EmailAccounts",
+	"New-EmailAccounts",
 	"Add-EmailAlias",
 	"Add-MailboxMember",
 	"Add-TrustedSender",
@@ -4511,13 +4511,13 @@ function OnRunButtonClick {
 
     # Perform actions based on the selected script
     switch ($selectedScript) {
-        "Add-ADAccounts" { Add-ADAccounts }
-        "Add-ADAndEmailAccounts" { Add-ADAndEmailAccounts }
+        "New-ADAccounts" { New-ADAccounts }
+        "New-ADAndEmailAccounts" { New-ADAndEmailAccounts }
 		"Add-AuthenticationPhoneMethod" { Add-AuthenticationPhoneMethod }
 		"Add-AutoReply" { Add-AutoReply }
 		"Add-Contacts" { Add-Contacts }
 		"Add-DistributionListMember" { Add-DistributionListMember }
-		"Add-EmailAccounts" { Add-EmailAccounts }
+		"New-EmailAccounts" { New-EmailAccounts }
 		"Add-EmailAlias" { Add-EmailAlias }
         "Add-MailboxMember" { Add-MailboxMember }
 		"Add-TrustedSender" { Add-TrustedSender }
