@@ -8,7 +8,7 @@ $version = "v2.12.2"
 # Settings retrieval function
 function LoadSettings {
 	Write-Host "Loading settings from settings.ini..."
-	Get-Content “.\settings.ini” | foreach-object -begin {$h=@{}} -process { $k = [regex]::split($_,’=’); if(($k[0].CompareTo(“”) -ne 0)     -and ($k[0].StartsWith(“[“) -ne $True)) { $h.Add($k[0], $k[1]) } }
+	Get-Content “.\settings.ini” | foreach-object -begin {$h=@{}; Write-Host "$h"} -process { $k = [regex]::split($_,’=’); if(($k[0].CompareTo(“”) -ne 0)     -and ($k[0].StartsWith(“[“) -ne $True)) { $h.Add($k[0], $k[1]) } }
 	$progressBarColor = $h.Get_Item("ProgressBarColor")
 	$progressBarType = $h.Get_Item(“ProgressBarType”)
 	$enableVisualStyles = $h.Get_Item(“EnableVisualStyles”)
