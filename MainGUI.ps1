@@ -3074,6 +3074,9 @@ function Install-RequiredModules {
 	OperationComplete
 	Stop-Transcript
 }
+function New-InboxRule-SP {
+	New-InboxRule -Name ForwardMail -Mailbox example@contoso.com -From example@contoso.com -ForwardTo example@contoso.com -MarkAsRead $true -MoveToFolder example@contoso.com:\Completed
+}
 function Remove-DistributionListMember {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Remove-DistributionListMember.txt"
 	Write-Host "Running Remove-DistributionListMember script..."
