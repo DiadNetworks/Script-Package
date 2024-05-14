@@ -53,6 +53,8 @@ function LoadSettings {
 
 	Write-Host "Loaded settings."
 }
+# Enable visual styles, will be commented out if settings.ini is enabled
+[System.Windows.Forms.Application]::EnableVisualStyles()
 # Color mode function - not used currently
 function ChangeFormColor {
 	param (
