@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Script-Package"
-#define MyAppVersion "2.12.2"
+#define MyAppVersion "2.12.3"
 #define MyAppPublisher "Diad Networks LLC"
 #define MyAppExeName "Script-Package.bat"
 #define DesktopIconName "Script Package"
