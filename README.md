@@ -119,7 +119,7 @@ You can choose either Business Basic or Business Standard for the email license.
 ### Remove-DistributionListMember
 
 *Requires sign in.*  
-Remove a single member or multiple members to a distribution list.
+Remove a single member or multiple members from a distribution list.
 
 ### Remove-MailboxMember
 
