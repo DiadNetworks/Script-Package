@@ -4473,13 +4473,10 @@ function Show-Information {
 
 # This list is what will be visible in the scriptSelect ComboBox
 $scriptList = @(
-	"New-ADAccounts",
-	"New-ADAndEmailAccounts",
 	"Add-AuthenticationPhoneMethod",
 	"Add-AutoReply",
 	"Add-Contacts",
 	"Add-DistributionListMember",
-	"New-EmailAccounts",
 	"Add-EmailAlias",
 	"Add-MailboxMember",
 	"Add-TrustedSender",
@@ -4489,6 +4486,9 @@ $scriptList = @(
 	"Convert-O365GroupToDistributionGroup",
 	"Enable-Archive",
 	"Install-RequiredModules",
+	"New-ADAccounts",
+	"New-ADAndEmailAccounts",
+	"New-EmailAccounts",
 	"Remove-DistributionListMember",
 	"Remove-EmailAlias",
 	"Remove-MailboxMember",
@@ -4513,13 +4513,10 @@ function OnRunButtonClick {
 
     # Perform actions based on the selected script
     switch ($selectedScript) {
-        "New-ADAccounts" { New-ADAccounts }
-        "New-ADAndEmailAccounts" { New-ADAndEmailAccounts }
 		"Add-AuthenticationPhoneMethod" { Add-AuthenticationPhoneMethod }
 		"Add-AutoReply" { Add-AutoReply }
 		"Add-Contacts" { Add-Contacts }
 		"Add-DistributionListMember" { Add-DistributionListMember }
-		"New-EmailAccounts" { New-EmailAccounts }
 		"Add-EmailAlias" { Add-EmailAlias }
         "Add-MailboxMember" { Add-MailboxMember }
 		"Add-TrustedSender" { Add-TrustedSender }
@@ -4529,6 +4526,9 @@ function OnRunButtonClick {
 		"Convert-O365GroupToDistributionGroup" { Convert-O365GroupToDistributionGroup }
 		"Enable-Archive" { Enable-Archive }
 		"Install-RequiredModules" { Install-RequiredModules }
+		"New-ADAccounts" { New-ADAccounts }
+        "New-ADAndEmailAccounts" { New-ADAndEmailAccounts }
+		"New-EmailAccounts" { New-EmailAccounts }
 		"Remove-DistributionListMember" { Remove-DistributionListMember }
 		"Remove-EmailAlias" { Remove-EmailAlias }
 		"Remove-MailboxMember" { Add-MailboxMember }
