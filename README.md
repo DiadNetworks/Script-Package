@@ -2,14 +2,14 @@
 
 ## Requirements
 
-**Powershell 7**  
+**[Powershell 7 or higher](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4)**  
 
-**Run as administrator:** Only necessary if you choose to use the script or batch file - the exe will always run as administrator. Edit: The exe has been removed due to antivirus detections and the installer version will now create a shortcut to the batch file instead. You can set it to always run as admin by going to the shortcut's properties, then "Advanced", then checking off "Run as administrator". Make sure to apply the changes.  
+**Run as administrator:** The installer version will create a shortcut which can be ran as admin. You can set it to always run as admin by going to the shortcut's properties, then "Advanced", then checking off "Run as administrator".  
 For the portable version, run `Script-Package.bat` as administrator.
 
 **Modules:** Microsoft.Graph, ExchangeOnlineManagement  
-- Install-Module -Name Microsoft.Graph -Force -AllowClobber  
-- Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber  
+- `Install-Module -Name Microsoft.Graph -Force -AllowClobber`  
+- `Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber`  
   
 There is an option in the dropdown called `Install-RequiredModules`, if you run this then the two commands shown above will be run.
 
@@ -37,7 +37,7 @@ What it looks like:
 ### Add-Contacts
 
 *Requires sign in.*  
-Add contacts.
+Add contacts for Microsoft 365.
 
 ### Add-DistributionListMember
 
@@ -77,7 +77,7 @@ Also has options for bulk.
 
 *Requires sign in. Requires run on server with Active Directory.*  
 For AD: This will disable the AD account of the entered user.  
-For O365: This will disable the account, convert the mailbox to type shared,  change the password to something random, remove all licenses and remove any 2FA number associated with the account. After doing that, another GUI will open allowing you to add members to the newly converted shared mailbox.  
+For O365: This will disable the account, convert the mailbox to type shared,  change the password to something random, remove all licenses and remove any 2FA number associated with the account. Has options for adding members to the shared mailbox and for adding an auto-reply.  
 Bulk options will be added in the future.
 
 ### Clear-RecycleBin
@@ -100,19 +100,19 @@ Turn on archiving, jumpstart archiving or turn on auto-expanding archive for a m
 ### Install-RequiredModules
 
 Installs required modules for the script package to work.  
-Install-Module -Name Microsoft.Graph -Force -AllowClobber  
-Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber
+`Install-Module -Name Microsoft.Graph -Force -AllowClobber`  
+`Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber`
 
 ### New-ADAccounts
 
 *Requires run on server with Active Directory.*  
 Add Active Directory accounts in bulk.  
-The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.
+The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed if necessary.
 
 ### New-ADAndEmailAccounts
 
 *Requires sign in. Requires run on server with Active Directory.*  
-The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.  
+The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed if necessary.  
 The email domain to use for the new email accounts must be entered or the email accounts won't be created.  
 Choose a license for the new email account from the list and make sure to purchase enough licenses before running the script or none will be assigned.  
 
@@ -140,7 +140,7 @@ Removes a single or multiple members from a Unified/Office365 group.
 
 ### Update-ScriptPackage
 
-Attempts to update the script package if a newer version is available.
+Attempts to update the script package if a newer version is available.  
 
 ### Set-ACLPermissions
 
@@ -158,4 +158,4 @@ Script-Package info and links.
 ## Logging
 
 Most of the scripts will create a transcript in the `Logs` folder.  
-The transcripts are set to overwrite older ones, so if you run a scipt twice you will only see the log for the latest run. Note a new transcript is created every time a **script** is run - not just a function within a script. For example, if you run Add-2FA, you can keep adding people and everything will be logged in the same file, but if you close the Add-2FA GUI and then run it again, a new transcript will start and the old one will be overwritten.
+The transcripts are set to overwrite older ones, so if you run a scipt twice you will only see the log for the latest run.
