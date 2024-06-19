@@ -4507,10 +4507,14 @@ $scriptList = @(
 )
 
 # Main GUI functions
+
+# Return the directory name of this script
 function Get-ScriptDirectory {
-	#Return the directory name of this script
-	$Invocation = (Get-Variable MyInvocation -Scope 1).Value
-	Split-Path $Invocation.MyCommand.Path
+	Get-Location | Select-Object -ExpandProperty Path
+}
+# Return the number of physical cores in the system
+function Get-SystemCoreCount {
+	Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty NumberOfCores
 }
 function OnRunButtonClick {
     # Get the selected script from the ComboBox
