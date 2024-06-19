@@ -289,7 +289,7 @@ function Add-AutoReply {
 	# internalReplyLabel
 	#
 	$internalReplyLabel.AutoSize = $true
-	$internalReplyLabel.Location = New-Object System.Drawing.Point(8, 56)
+	$internalReplyLabel.Location = New-Object System.Drawing.Point(8, 42)
 	$internalReplyLabel.Name = "internalReplyLabel"
 	$internalReplyLabel.Size = New-Object System.Drawing.Size(100, 13)
 	$internalReplyLabel.TabIndex = 2
@@ -320,7 +320,7 @@ function Add-AutoReply {
 	# externalReplyLabel
 	#
 	$externalReplyLabel.AutoSize = $true
-	$externalReplyLabel.Location = New-Object System.Drawing.Point(218, 56)
+	$externalReplyLabel.Location = New-Object System.Drawing.Point(218, 42)
 	$externalReplyLabel.Name = "externalReplyLabel"
 	$externalReplyLabel.Size = New-Object System.Drawing.Size(103, 13)
 	$externalReplyLabel.TabIndex = 4
