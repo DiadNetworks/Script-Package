@@ -114,7 +114,12 @@ The script will auto-detect the ActiveDirectory domain/forest name, but it can b
 *Requires sign in. Requires run on server with Active Directory.*  
 The script will auto-detect the ActiveDirectory domain/forest name, but it can be changed manually.  
 The email domain to use for the new email accounts must be entered or the email accounts won't be created.  
-You can choose either Business Basic or Business Standard for the email license. Make sure to purchase enough licenses before running the script or none will be assigned.
+Choose a license for the new email account from the list and make sure to purchase enough licenses before running the script or none will be assigned.  
+
+### New-EmailAccounts
+*Requires sign in.*  
+Use the button to open and fill out the template.  
+Choose a license for the new email account from the list and make sure to purchase enough licenses before running the script or none will be assigned.  
 
 ### Remove-DistributionListMember
 
