@@ -2825,14 +2825,36 @@ function New-ADAndEmailAccounts {
 			$progressBar1.Value = 90
 
 			# Set license
-			if ($licenseComboBox.Text -eq "Business Basic") {
-				Write-Host "Assigning Business Basic license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
-			} elseif ($licenseComboBox.Text -eq "Business Standard") {
-				Write-Host "Assigning Business Standard license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
-			} else {
-				Write-Host "No license selected or invalid entry."
+			switch ($licenseComboBox.Text) {
+				"Exchange Online (Plan 1)" {
+					Write-Host "Assigning Exchange Online (Plan 1) license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "4b9405b0-7788-4568-add1-99614e613b69"} -RemoveLicenses @()
+				}
+				"Exchange Online (Plan 2)" {
+					Write-Host "Assigning Exchange Online (Plan 2) license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "19ec0d23-8335-4cbd-94ac-6050e30712fa"} -RemoveLicenses @()
+				}
+				"Microsoft 365 Business Basic" {
+					Write-Host "Assigning Microsoft 365 Business Basic license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
+				}
+				"Microsoft 365 Business Standard" {
+					Write-Host "Assigning Microsoft 365 Business Standard license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
+				}
+				"Microsoft 365 Business Premium" {
+					Write-Host "Assigning Microsoft 365 Business Premium license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "cbdc14ab-d96c-4c30-b9f4-6ada7cdc1d46"} -RemoveLicenses @()
+				}
+				"Microsoft 365 E3" {
+					Write-Host "Assigning Microsoft 365 E3 license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "05e9a617-0261-4cee-bb44-138d3ef5d965"} -RemoveLicenses @()
+				}
+				"Microsoft 365 E5" {
+					Write-Host "Assigning Microsoft 365 E5 license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "06ebc4ee-1bb5-47dd-8120-11324bc54e06"} -RemoveLicenses @()
+				}
+				Default { Write-Host "No license selected or invalid entry." }
 			}
 		}
 		CheckForErrors
@@ -2908,8 +2930,14 @@ function New-ADAndEmailAccounts {
 	#
 	$licenseComboBox.FormattingEnabled = $true
 	$licenseComboBox.Items.AddRange(@(
-	"Business Basic",
-	"Business Standard"))
+		"Exchange Online (Plan 1)",
+		"Exchange Online (Plan 2)",
+		"Microsoft 365 Business Basic",
+		"Microsoft 365 Business Standard",
+		"Microsoft 365 Business Premium",
+		"Microsoft 365 E3",
+		"Microsoft 365 E5"
+		))
 	$licenseComboBox.Location = New-Object System.Drawing.Point(93, 70)
 	$licenseComboBox.Name = "licenseComboBox"
 	$licenseComboBox.Size = New-Object System.Drawing.Size(179, 21)
@@ -2989,20 +3017,35 @@ function New-EmailAccounts {
 		
 			# Set license
 			switch ($licenseComboBox.Text) {
-				condition {  }
-				Default {}
-			}
-			if ($licenseComboBox.Text -eq "Business Basic") {
-				Write-Host "Assigning Business Basic license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
-			} elseif ($licenseComboBox.Text -eq "Business Standard") {
-				Write-Host "Assigning Business Standard license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
-			} elseif ($licenseComboBox.Text -eq "Exchange Online (Plan 2)") {
-				Write-Host "Assigning Exchange Online (Plan 2) license..."
-				Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "19ec0d23-8335-4cbd-94ac-6050e30712fa"} -RemoveLicenses @()
-			} else {
-				Write-Host "No license selected or invalid entry."
+				"Exchange Online (Plan 1)" {
+					Write-Host "Assigning Exchange Online (Plan 1) license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "4b9405b0-7788-4568-add1-99614e613b69"} -RemoveLicenses @()
+				}
+				"Exchange Online (Plan 2)" {
+					Write-Host "Assigning Exchange Online (Plan 2) license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "19ec0d23-8335-4cbd-94ac-6050e30712fa"} -RemoveLicenses @()
+				}
+				"Microsoft 365 Business Basic" {
+					Write-Host "Assigning Microsoft 365 Business Basic license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "3b555118-da6a-4418-894f-7df1e2096870"} -RemoveLicenses @()
+				}
+				"Microsoft 365 Business Standard" {
+					Write-Host "Assigning Microsoft 365 Business Standard license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "f245ecc8-75af-4f8e-b61f-27d8114de5f3"} -RemoveLicenses @()
+				}
+				"Microsoft 365 Business Premium" {
+					Write-Host "Assigning Microsoft 365 Business Premium license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "cbdc14ab-d96c-4c30-b9f4-6ada7cdc1d46"} -RemoveLicenses @()
+				}
+				"Microsoft 365 E3" {
+					Write-Host "Assigning Microsoft 365 E3 license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "05e9a617-0261-4cee-bb44-138d3ef5d965"} -RemoveLicenses @()
+				}
+				"Microsoft 365 E5" {
+					Write-Host "Assigning Microsoft 365 E5 license..."
+					Set-MgUserLicense -UserId $emailAddress -AddLicenses @{SkuId = "06ebc4ee-1bb5-47dd-8120-11324bc54e06"} -RemoveLicenses @()
+				}
+				Default { Write-Host "No license selected or invalid entry." }
 			}
 			$progressBar1.Value = 90
 		}
@@ -3030,8 +3073,14 @@ function New-EmailAccounts {
 	#
 	$licenseComboBox.FormattingEnabled = $true
 	$licenseComboBox.Items.AddRange(@(
-	"Business Basic",
-	"Business Standard"))
+		"Exchange Online (Plan 1)",
+		"Exchange Online (Plan 2)",
+		"Microsoft 365 Business Basic",
+		"Microsoft 365 Business Standard",
+		"Microsoft 365 Business Premium",
+		"Microsoft 365 E3",
+		"Microsoft 365 E5"
+		))
 	$licenseComboBox.Location = New-Object System.Drawing.Point(90, 12)
 	$licenseComboBox.Name = "licenseComboBox"
 	$licenseComboBox.Size = New-Object System.Drawing.Size(182, 21)
