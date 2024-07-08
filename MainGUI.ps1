@@ -4602,24 +4602,131 @@ function OnRunButtonClick {
         default { Write-Host "No script selected." }
     }
 }
+$global:accountList = @(
+	"New account"
+)
+$global:credentialsStore = @{}
 function OnSignInButtonClick {
-	Write-Host "SignInButton clicked."
+	function OnSignInFormButtonClick {
+		param (
+        [string]$accountName
+		)
+
+		Write-Host "SignInFormButton clicked."
+		$progressBar1.Value = 10
+		Disconnect-Graph
+		Disconnect-ExchangeOnline -Confirm:$false
+		$progressBar1.Value = 30
+
+		# Check if credentials for the account are already stored
+		if ($global:credentialsStore.ContainsKey($accountName)) {
+			Write-Host "Credentails found."
+			$credentials = $global:credentialsStore[$accountName]
+			$mgContext = $credentials.MgContext
+			$exContextPath = $credentials.ExContext
+
+			# Restore Microsoft Graph context
+			Set-MgContext -Context $mgContext
+			Write-Host "Connected to Graph"
+			$progressBar1.Value = 50
+
+			# Restore ExchangeOnline session
+			$exSession = Import-Clixml -Path $exContextPath
+			Import-PSSession $exSession -DisableNameChecking
+			Write-Host "Connected to Exchange"
+			$progressBar1.Value = 100
+
+			$label1.Text = "Currently signed in as:`n" + $mgContext.Account
+		} else {
+			Write-Host "Credentials not found."
+			# Perform the connections and save the contexts
+			Connect-MgGraph -Scopes "User.ReadWrite.All", "Directory.ReadWrite.All"
+			Write-Host "Connected to Graph"
+			$progressBar1.Value = 50
+			CheckForErrors
+
+			$exSession = Connect-ExchangeOnline
+			Write-Host "Connected to Exchange"
+			$progressBar1.Value = 100
+			CheckForErrors
+
+			$mgContext = Get-MgContext
+			$exContextPath = "exContext-$($mgContext.Account).xml"
+			$exSession | Export-Clixml -Path $exContextPath
+
+			# Save the credentials in the global store
+			$global:credentialsStore[$($mgContext.Account)] = @{
+				MgContext = $mgContext
+				ExContext = $exContextPath
+			}
+
+			$global:accountList += $mgContext.Account
+
+			$label1.Text = "Currently signed in as:`n" + $mgContext.Account
+		}
+		$progressBar1.Value = 0
+		CheckForErrors
+	}
+
+	Write-Host "SignInButton clicked, opening sign in form."
 	$progressBar1.Value = 10
 
-	Connect-MgGraph -Scopes "User.ReadWrite.All", "Directory.ReadWrite.All"
-	Write-Host "Connected to Graph"
-	$progressBar1.Value = 50
-	CheckForErrors
+	$SignInForm = New-Object System.Windows.Forms.Form
 
-	Connect-ExchangeOnline
-	Write-Host "Connected to Exchange"
-	$progressBar1.Value = 100
-	CheckForErrors
+	$selectAccountBox = New-Object System.Windows.Forms.ComboBox
+	$selectAccountLabel = New-Object System.Windows.Forms.Label
+	$signInFormButton = New-Object System.Windows.Forms.Button
+	#
+	# selectAccountBox
+	#
+	$selectAccountBox.AutoCompleteMode = [System.Windows.Forms.AutoCompleteMode]::Suggest
+	$selectAccountBox.AutoCompleteSource = [System.Windows.Forms.AutoCompleteSource]::CustomSource
+	$selectAccountBox.FormattingEnabled = $true
+	$selectAccountBox.Items.AddRange($accountList)
+	$selectAccountBox.Location = New-Object System.Drawing.Point(12, 37)
+	$selectAccountBox.Name = "selectAccountBox"
+	$selectAccountBox.Size = New-Object System.Drawing.Size(256, 21)
+	$selectAccountBox.Sorted = $true
+	$selectAccountBox.TabIndex = 1
+	#
+	# selectAccountLabel
+	#
+	$selectAccountLabel.AutoSize = $true
+	$selectAccountLabel.Location = New-Object System.Drawing.Point(13, 13)
+	$selectAccountLabel.Name = "selectAccountLabel"
+	$selectAccountLabel.Size = New-Object System.Drawing.Size(83, 13)
+	$selectAccountLabel.TabIndex = 0
+	$selectAccountLabel.Text = "Select Account:"
+	#
+	# signInFormButton
+	#
+	$signInFormButton.Location = New-Object System.Drawing.Point(12, 77)
+	$signInFormButton.Name = "signInFormButton"
+	$signInFormButton.Size = New-Object System.Drawing.Size(256, 23)
+	$signInFormButton.TabIndex = 2
+	$signInFormButton.Text = "Sign In"
+	$signInFormButton.UseVisualStyleBackColor = $true
+	$signInFormButton.Add_Click({ OnSignInFormButtonClick -accountName $selectAccountBox.text })
+	#
+	# SignInForm
+	#
+	$SignInForm.ClientSize = New-Object System.Drawing.Size(280, 112)
+	$SignInForm.Controls.Add($signInFormButton)
+	$SignInForm.Controls.Add($selectAccountLabel)
+	$SignInForm.Controls.Add($selectAccountBox)
+	$SignInForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::Fixed3D
+	$SignInForm.Icon = ".\Images\logo.ico"
+	$SignInForm.MaximizeBox = $false
+	$SignInForm.MinimizeBox = $false
+	$SignInForm.Name = "SignInForm"
+	$SignInForm.Text = "Sign In"
 
-	$currentMgContext = Get-MgContext
-	$label1.Text = "Currently signed in as:`n" + $currentMgContext.Account
 	$progressBar1.Value = 0
-	CheckForErrors
+
+	$SignInForm.Add_Shown({$SignInForm.Activate()})
+	$SignInForm.ShowDialog()
+	# Release the Form
+	$SignInForm.Dispose()
 }
 function OnSignOutButtonClick {
 	Write-Host "SignOutButton clicked."
