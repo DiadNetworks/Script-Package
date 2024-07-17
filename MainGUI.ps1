@@ -2533,7 +2533,7 @@ function Install-RequiredModules {
 }
 function New-ADAccounts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\New-ADAccounts.txt"
-	Write-Host "Running Add-ADUsers script..."
+	Write-Host "Running New-ADAccounts script..."
 	$progressBar1.Value = 10
 	Write-Host "Importing ActiveDirectory Module..."
 	Import-Module ActiveDirectory
@@ -2553,12 +2553,33 @@ function New-ADAccounts {
 		$progressBar1.Value = 0
 	}
 	function OnCreateAccountsButtonClick {
+		Write-Host "Checking if any SamAccountNames are over 20 characters."
+		Import-Csv -Path ".\Templates\New-ADAccounts.csv" | ForEach-Object {
+			if ($_.SamAccountName.Length -gt 20) {
+				Write-Host "$($_.SamAccountName) is over 20 characters, requesting user confirmation." -ForegroundColor Red
+				$getUserConfirmation = ShowWarningForm -warningText "One or more SamAccountNames are over 20 characters - this may cause issues.`nPlease confirm if you'd like to proceed anyways."
+				if ($getUserConfirmation -eq $true) {
+					Write-Host "User confirmed to continue, running script..."
+					CreateADAccounts
+				} else {
+					Write-Host "User closed confirmation window, cancelling action..."
+				}
+				break
+			}
+		}
+		Write-Host "All SamAccountNames are within 20 characters."
+		CreateADAccounts
+	}
+	function CreateADAccounts {
+		Write-Host "Importing template csv..."
 		$progressBar1.Value = 10
 		$csvFile = Import-Csv -Path ".\Templates\New-ADAccounts.csv"
 		$progressBar1.Value = 20
 		CheckForErrors
 
 		foreach ($row in $csvFile) {
+			Write-Host "Gathering info..."
+
 			$sourceUser = Get-ADUser -Identity $row.SourceUser -Properties *
 
 			if ($null -eq $sourceUser) {
@@ -2577,13 +2598,16 @@ function New-ADAccounts {
 			$forest = $adDomainInput.Text
 			$displayName = $row.GivenName + " " + $row.Surname
 			$userPrincipalName = $row.SamAccountName + "@$forest"
+			$samAccountName = $row.SamAccountName
 			$progressBar1.Value = 30
-
-			New-ADUser -SamAccountName $row.SamAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname  
+			
+			Write-Host "Creating new user $samAccountName..."
+			New-ADUser -SamAccountName $samAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname  
 			$progressBar1.Value = 40
 
 			$newUser = Get-ADUser -Filter "SamAccountName -eq '$($row.SamAccountName)'"
-
+			
+			Write-Host "Copying attributes from source user $($sourceUser.SamAccountName) to new user $($newUser.SamAccountName)..."
 			# Copy additional attributes from the source user
 			Set-ADUser $newUser -ProfilePath $sourceUser.ProfilePath
 			Set-ADUser $newUser -ScriptPath $sourceUser.ScriptPath
@@ -2591,36 +2615,50 @@ function New-ADAccounts {
 			Set-ADUser $newUser -CannotChangePassword $sourceUser.CannotChangePassword
 			$progressBar1.Value = 50
 			
-			# Construct HomeDirectory path
-			$originalPath = $sourceUser.HomeDirectory
-			$parentPath = Split-Path $originalPath -Parent
-			$homeDirectory = Join-Path $parentPath $row.SamAccountName
-			
-			# Create HomeDirectory and HomeDrive
-			New-Item -Path $homeDirectory -ItemType Directory
-			$aclPath = $homeDirectory
-			$acl = Get-Acl $aclPath
+			Write-Host "Checking if source user $($sourceUser.SamAccountName) has a Home Directory..."
+			# Check if the source user has a HomeDirectory
+			if ($sourceUser.HomeDirectory) {
+				Write-Host "Source user $($sourceUser.SamAccountName) has a Home Directory, copying to new user $($newUser.SamAccountName)..."
+				# Construct HomeDirectory path
+				$originalPath = $sourceUser.HomeDirectory
+				$parentPath = Split-Path $originalPath -Parent
+				$homeDirectory = Join-Path $parentPath $row.SamAccountName
 
-			$identity = "$forest\$samAccountName"
-			$rights = "Modify"
-			$inheritanceFlags = "ContainerInherit, ObjectInherit"
-			$propagationFlags = "None"
-			$accessControlType = "Allow"
-			$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
-			$acl.AddAccessRule($rule)
-			Set-Acl $aclPath $acl
-			$progressBar1.Value = 60
-			
-			# Add HomeDirectory and HomeDrive
-			Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
-			Set-ADUser $newUser -HomeDirectory $homeDirectory
-			$progressBar1.Value = 70
+				# Create HomeDirectory and HomeDrive
+				New-Item -Path $homeDirectory -ItemType Directory
+				$aclPath = $homeDirectory
+				$acl = Get-Acl $aclPath
 
-			# Copy security group memberships
-			$sourceGroups = Get-ADPrincipalGroupMembership $sourceUser
-			foreach ($group in $sourceGroups) {
-				Add-ADGroupMember -Identity $group -Members $newUser
+				$identity = "$forest\$samAccountName"
+				$rights = "Modify"
+				$inheritanceFlags = "ContainerInherit, ObjectInherit"
+				$propagationFlags = "None"
+				$accessControlType = "Allow"
+				$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
+				$acl.AddAccessRule($rule)
+				Set-Acl $aclPath $acl
+				$progressBar1.Value = 60
+
+				# Add HomeDirectory and HomeDrive
+				Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
+				Set-ADUser $newUser -HomeDirectory $homeDirectory
+			} else {
+				Write-Host "Source user $($sourceUser.SamAccountName) does not have a HomeDirectory. Skipping HomeDirectory creation for the new user $($newUser.SamAccountName)."
 			}
+			$progressBar1.Value = 70
+			
+			Write-Host "Copying group membership from source user $($sourceUser.SamAccountName) to new user $($newUser.SamAccountName)..."
+			# Copy security group memberships
+			$sourceGroups = Get-ADPrincipalGroupMembership -Identity $sourceUser
+			foreach ($group in $sourceGroups) {
+				# Check if the new user is already a member of the group
+				$isMember = Get-ADGroupMember -Identity $group -Recursive | Where-Object { $_.SamAccountName -eq $newUser.SamAccountName }
+				if ($null -eq $isMember) {
+					# Add the new user to the group if they are not already a member
+					Add-ADGroupMember -Identity $group -Members $newUser
+				}
+			}
+			Write-Host "Finished creating new user $($newuser.SamAccountName)."
 		}
 		CheckForErrors
 		OperationComplete
@@ -2719,7 +2757,7 @@ function New-ADAccounts {
 }
 function New-ADAndEmailAccounts {
 	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\New-ADAndEmailAccounts.txt"
-	Write-Host "Running Add-ADUsersAndEmail script..."
+	Write-Host "Running New-ADAndEmailAccounts script..."
 	$progressBar1.Value = 10
 	Write-Host "Importing ActiveDirectory Module..."
 	Import-Module ActiveDirectory
@@ -2738,13 +2776,33 @@ function New-ADAndEmailAccounts {
 		CheckForErrors
 		$progressBar1.Value = 0
 	}
-
 	function OnCreateAccountsButtonClick {
+		Write-Host "Checking if any SamAccountNames are over 20 characters."
+		Import-Csv -Path ".\Templates\New-ADAndEmailAccounts.csv" | ForEach-Object {
+			if ($_.SamAccountName.Length -gt 20) {
+				Write-Host "$($_.SamAccountName) is over 20 characters, requesting user confirmation." -ForegroundColor Red
+				$getUserConfirmation = ShowWarningForm -warningText "One or more SamAccountNames are over 20 characters - this may cause issues.`nPlease confirm if you'd like to proceed anyways."
+				if ($getUserConfirmation -eq $true) {
+					Write-Host "User confirmed to continue, running script..."
+					CreateADAccounts
+				} else {
+					Write-Host "User closed confirmation window, cancelling action..."
+				}
+				break
+			}
+		}
+		Write-Host "All SamAccountNames are within 20 characters."
+		CreateADAccounts
+	}
+	function CreateAccounts {
+		Write-Host "Importing template csv..."
 		$progressBar1.Value = 10
 		$csvFile = Import-Csv -Path ".\Templates\New-ADAndEmailAccounts.csv"
 		$progressBar1.Value = 30
 		CheckForErrors
 		foreach ($row in $csvFile) {
+			Write-Host "Gathering info..."
+
 			$sourceUser = Get-ADUser -Identity $row.SourceUser -Properties *
 		
 			if ($null -eq $sourceUser) {
@@ -2770,12 +2828,14 @@ function New-ADAndEmailAccounts {
 			$emailAddress = $row.SamAccountName + "@$emailDomain.$topLevelDomain"
 			# $aliasAddress = $row.SamAccountName + "@$emailDomain.onmicrosoft.com"
 			$progressBar1.Value = 30
-		
+			
+			Write-Host "Creating new user $samAccountName..."
 			New-ADUser -SamAccountName $row.SamAccountName -Name $displayName -UserPrincipalName $userPrincipalName -DisplayName $displayName -AccountPassword (ConvertTo-SecureString $row.Password -AsPlainText -Force) -Enabled $true -Path $ou.DistinguishedName -GivenName $row.GivenName -Surname $row.Surname
 			$progressBar1.Value = 40
 		
 			$newUser = Get-ADUser -Filter "SamAccountName -eq '$($row.SamAccountName)'"
-		
+			
+			Write-Host "Copying attributes from source user $($sourceUser.SamAccountName) to new user $($newUser.SamAccountName)..."
 			# Copy additional attributes from the source user
 			Set-ADUser $newUser -ProfilePath $sourceUser.ProfilePath
 			Set-ADUser $newUser -ScriptPath $sourceUser.ScriptPath
@@ -2783,35 +2843,48 @@ function New-ADAndEmailAccounts {
 			Set-ADUser $newUser -CannotChangePassword $sourceUser.CannotChangePassword
 			$progressBar1.Value = 50
 			
-			# Construct HomeDirectory path
-			$originalPath = $sourceUser.HomeDirectory
-			$parentPath = Split-Path $originalPath -Parent
-			$homeDirectory = Join-Path $parentPath $row.SamAccountName
-			
-			# Create HomeDirectory and HomeDrive
-			New-Item -Path $homeDirectory -ItemType Directory
-			$aclPath = $homeDirectory
-			$acl = Get-Acl $aclPath
+			Write-Host "Checking if source user $($sourceUser.SamAccountName) has a Home Directory..."
+			# Check if the source user has a HomeDirectory
+			if ($sourceUser.HomeDirectory) {
+				Write-Host "Source user $($sourceUser.SamAccountName) has a Home Directory, copying to new user $($newUser.SamAccountName)..."
+				# Construct HomeDirectory path
+				$originalPath = $sourceUser.HomeDirectory
+				$parentPath = Split-Path $originalPath -Parent
+				$homeDirectory = Join-Path $parentPath $row.SamAccountName
 
-			$identity = "$forest\$samAccountName"
-			$rights = "Modify"
-			$inheritanceFlags = "ContainerInherit, ObjectInherit"
-			$propagationFlags = "None"
-			$accessControlType = "Allow"
-			$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
-			$acl.AddAccessRule($rule)
-			Set-Acl $aclPath $acl
-			$progressBar1.Value = 60
-			
-			# Add HomeDirectory and HomeDrive
-			Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
-			Set-ADUser $newUser -HomeDirectory $homeDirectory
+				# Create HomeDirectory and HomeDrive
+				New-Item -Path $homeDirectory -ItemType Directory
+				$aclPath = $homeDirectory
+				$acl = Get-Acl $aclPath
+
+				$identity = "$forest\$samAccountName"
+				$rights = "Modify"
+				$inheritanceFlags = "ContainerInherit, ObjectInherit"
+				$propagationFlags = "None"
+				$accessControlType = "Allow"
+				$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$identity","$rights","$inheritanceFlags","$propagationFlags","$accessControlType")
+				$acl.AddAccessRule($rule)
+				Set-Acl $aclPath $acl
+				$progressBar1.Value = 60
+
+				# Add HomeDirectory and HomeDrive
+				Set-ADUser $newUser -HomeDrive $sourceUser.HomeDrive
+				Set-ADUser $newUser -HomeDirectory $homeDirectory
+			} else {
+				Write-Host "Source user $($sourceUser.SamAccountName) does not have a HomeDirectory. Skipping HomeDirectory creation for the new user $($newUser.SamAccountName)."
+			}
 			$progressBar1.Value = 70
-		
+			
+			Write-Host "Copying group membership from source user $($sourceUser.SamAccountName) to new user $($newUser.SamAccountName)..."
 			# Copy security group memberships
-			$sourceGroups = Get-ADPrincipalGroupMembership $sourceUser
+			$sourceGroups = Get-ADPrincipalGroupMembership -Identity $sourceUser
 			foreach ($group in $sourceGroups) {
-				Add-ADGroupMember -Identity $group -Members $newUser
+				# Check if the new user is already a member of the group
+				$isMember = Get-ADGroupMember -Identity $group -Recursive | Where-Object { $_.SamAccountName -eq $newUser.SamAccountName }
+				if ($null -eq $isMember) {
+					# Add the new user to the group if they are not already a member
+					Add-ADGroupMember -Identity $group -Members $newUser
+				}
 			}
 			$progressBar1.Value = 80
 		
