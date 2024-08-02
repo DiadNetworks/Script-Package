@@ -1096,6 +1096,7 @@ function Add-EmailAlias {
 	#
 	$numericUpDown1.Enabled = $false
 	$numericUpDown1.Location = New-Object System.Drawing.Point(166, 73)
+	$numericUpDown1.Maximum = 1000
 	#$numericUpDown1.Maximum = New-Object decimal(@(
 	#1000,
 	#0,
