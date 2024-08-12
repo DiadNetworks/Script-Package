@@ -1,4 +1,4 @@
-$version = "v2.12.5"
+$version = "v2.12.6"
 #Requires -RunAsAdministrator
 #GUI generated with ConvertForm module version 2.0.0
 #Need these 2 modules:
@@ -2785,7 +2785,7 @@ function New-ADAndEmailAccounts {
 				$getUserConfirmation = ShowWarningForm -warningText "One or more SamAccountNames are over 20 characters - this may cause issues.`nPlease confirm if you'd like to proceed anyways."
 				if ($getUserConfirmation -eq $true) {
 					Write-Host "User confirmed to continue, running script..."
-					CreateADAccounts
+					CreateAccounts
 				} else {
 					Write-Host "User closed confirmation window, cancelling action..."
 				}
@@ -2793,7 +2793,7 @@ function New-ADAndEmailAccounts {
 			}
 		}
 		Write-Host "All SamAccountNames are within 20 characters."
-		CreateADAccounts
+		CreateAccounts
 	}
 	function CreateAccounts {
 		Write-Host "Importing template csv..."
