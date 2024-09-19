@@ -4685,7 +4685,7 @@ function OnSignInButtonClick {
 	$progressBar1.Value = 50
 	CheckForErrors
 
-	Connect-ExchangeOnline
+	Connect-ExchangeOnline -ShowBanner:$false -SkipLoadingCmdletHelp #-SkipLoadingFormatData
 	Write-Host "Connected to Exchange"
 	$progressBar1.Value = 100
 	CheckForErrors
