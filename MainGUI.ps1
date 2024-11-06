@@ -2230,9 +2230,9 @@ function Clear-RecycleBin {
 
 	Stop-Transcript
 }
-function Convert-O365GroupToDistributionGroup {
-	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Convert-O365GroupToDistributionGroup.txt"
-	Write-Host "Running Convert-O365GroupToDistributionList script..."
+function Convert-UnifiedGroupToDistributionGroup {
+	Start-Transcript -IncludeInvocationHeader -Path ".\Logs\Convert-UnifiedGroupToDistributionGroup.txt"
+	Write-Host "Running Convert-UnifiedGroupToDistributionList script..."
 	$progressBar1.Value = 10
 	function OnCreateButtonClick {
 		Write-Host "Create button clicked."
@@ -2257,7 +2257,7 @@ function Convert-O365GroupToDistributionGroup {
 	function OnTemplateButtonClick {
 		Write-Host "Open template button clicked."
 		$progressBar1.Value = 10
-		Invoke-Item ".\Templates\Convert-O365GroupToDistributionList.txt"
+		Invoke-Item ".\Templates\Convert-UnifiedGroupToDistributionList.txt"
 		$progressBar1.Value = 0
 		CheckForErrors
 	}
@@ -2265,7 +2265,7 @@ function Convert-O365GroupToDistributionGroup {
 	function OnCreateBulkButtonClick {
 		Write-Host "Create bulk button clicked."
 		$progressBar1.Value = 2
-		Get-Content ".\Templates\Convert-O365GroupToDistributionList.txt" | ForEach-Object {
+		Get-Content ".\Templates\Convert-UnifiedGroupToDistributionList.txt" | ForEach-Object {
 			$progressBar1.Value = 5
 			$OldGroupName = $_ -Split "@"
 			$DistGroupName = $OldGroupName[0] + "-New"
@@ -2387,7 +2387,7 @@ function Convert-O365GroupToDistributionGroup {
 	$ScriptForm6.MaximizeBox = $false
 	$ScriptForm6.MinimizeBox = $false
 	$ScriptForm6.Name = "ScriptForm6"
-	$ScriptForm6.Text = "Convert-O365GroupToDistributionList"
+	$ScriptForm6.Text = "Convert-UnifiedGroupToDistributionList"
 	$ScriptForm6.StartPosition = "CenterParent"
 	$ScriptForm6.Add_Shown({$ScriptForm6.Activate()})
 	
@@ -4613,7 +4613,7 @@ $scriptList = @(
 	"Add-UnifiedGroupMember",
 	"Block-User",
 	"Clear-RecycleBin",
-	"Convert-O365GroupToDistributionGroup",
+	"Convert-UnifiedGroupToDistributionGroup",
 	"Enable-Archive",
 	"Install-RequiredModules",
 	"New-ADAccounts",
@@ -4657,7 +4657,7 @@ function OnRunButtonClick {
 		"Add-UnifiedGroupMember" { Add-UnifiedGroupMember }
         "Block-User" { Block-User }
 		"Clear-RecycleBin" { Clear-RecycleBin }
-		"Convert-O365GroupToDistributionGroup" { Convert-O365GroupToDistributionGroup }
+		"Convert-UnifiedGroupToDistributionGroup" { Convert-UnifiedGroupToDistributionGroup }
 		"Enable-Archive" { Enable-Archive }
 		"Install-RequiredModules" { Install-RequiredModules }
 		"New-ADAccounts" { New-ADAccounts }
