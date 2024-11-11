@@ -4364,7 +4364,9 @@ function Set-NTP {
 	function OnSetSourceButtonClick {
 		Write-Host "setSourceButton clicked."
 		$progressBar1.Value = 10
-		w32tm /config /syncfromflags:manual /manualpeerlist:168.61.215.74,0x8 /reliable:yes /update
+		w32tm /config /syncfromflags:manual /manualpeerlist:time.windows.com,0x8 /reliable:yes /update
+		# With IP address:
+		# w32tm /config /syncfromflags:manual /manualpeerlist:168.61.215.74,0x8 /reliable:yes /update
 		$progressBar1.Value = 50
 		w32tm /config /update
 		$progressBar1.Value = 80
