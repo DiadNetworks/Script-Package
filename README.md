@@ -158,4 +158,4 @@ Script-Package info and links.
 ## Logging
 
 Most of the scripts will create a transcript in the `Logs` folder.  
-The transcripts are set to overwrite older ones, so if you run a scipt twice you will only see the log for the latest run.
+The transcripts are set to overwrite older ones, so if you run a script twice you will only see the log for the latest run.
