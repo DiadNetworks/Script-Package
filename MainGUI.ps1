@@ -4901,7 +4901,9 @@ $operationCompleteForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]:
 $operationCompleteForm.MaximizeBox = $false
 $operationCompleteForm.MinimizeBox = $false
 $operationCompleteForm.Name = "operationCompleteForm"
-$operationCompleteForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+$operationCompleteForm.StartPosition = "Manual"
+$operationCompleteForm.Left = $MainGUI.Left + (($MainGUI.Width - $operationCompleteForm.Width) / 2)
+$operationCompleteForm.Top = $MainGUI.Top + (($MainGUI.Height - $operationCompleteForm.Height) / 2)
 $operationCompleteForm.Text = "Operation Complete"
 $operationCompleteForm.Add_Shown({$operationCompleteForm.Activate()})
 
