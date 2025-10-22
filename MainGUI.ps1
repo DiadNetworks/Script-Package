@@ -4901,17 +4901,16 @@ $operationCompleteForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]:
 $operationCompleteForm.MaximizeBox = $false
 $operationCompleteForm.MinimizeBox = $false
 $operationCompleteForm.Name = "operationCompleteForm"
-$operationCompleteForm.StartPosition = "Manual"
-$operationCompleteForm.Left = $MainGUI.Left + (($MainGUI.Width - $operationCompleteForm.Width) / 2)
-$operationCompleteForm.Top = $MainGUI.Top + (($MainGUI.Height - $operationCompleteForm.Height) / 2)
+$operationCompleteForm.StartPosition = "CenterParent"
 $operationCompleteForm.Text = "Operation Complete"
+
 $operationCompleteForm.Add_Shown({$operationCompleteForm.Activate()})
 
 # Function to show operation complete form
 function OperationComplete {
 	$progressBar1.Value = 100
 	Write-Host "Operation complete."
-	$operationCompleteForm.ShowDialog()
+	$operationCompleteForm.ShowDialog($MainGUI)
 }
 # Function to show warning form
 function ShowWarningForm {
